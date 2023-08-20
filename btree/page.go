@@ -48,14 +48,13 @@ func (p Page) GetCellPos(i uint16) uint16 {
 	return 5 + i*p.cellSize()
 }
 
-// Returns the byte representation of the i-th cell.
+// Returns i-th cell.
 // Returns an error if i is greater than NCells.
-func (p Page) GetCell(i uint16) ([]byte, error) {
+func (p Page) GetCell(i uint16) (Cell, error) {
 	if i > p.NCells() {
 		return nil, fmt.Errorf("")
 	}
-
-	return p[p.GetCellPos(i) : p.GetCellPos(i)+p.cellSize()], nil
+	return Cell(p[p.GetCellPos(i) : p.GetCellPos(i)+p.cellSize()]), nil
 }
 
 // Returns a new Page with the cell c inserted at the cell index i.
