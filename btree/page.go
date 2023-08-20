@@ -53,7 +53,7 @@ func (p Page) GetCellPos(i uint16) uint16 {
 // Returns an error if i is greater than NCells.
 func (p Page) GetCell(i uint16) (Cell, error) {
 	if i > p.NCells() {
-		return nil, fmt.Errorf("")
+		return nil, ErrCellIndexOutBounds
 	}
 	return Cell(p[p.GetCellPos(i) : p.GetCellPos(i)+p.cellSize()]), nil
 }
@@ -62,9 +62,9 @@ func (p Page) GetCell(i uint16) (Cell, error) {
 // Returns an error if i is greater than NCells+1 or c size isn't equal to cSize.
 func (p Page) InsertCell(i uint16, c Cell) (Page, error) {
 	if i > p.NCells()+1 {
-		return nil, fmt.Errorf("")
+		return nil, ErrCellIndexOutBounds
 	} else if c.Size() != p.cellSize() {
-		return nil, fmt.Errorf("")
+		return nil, ErrWrongCellSize
 	}
 
 	m := Page{}
