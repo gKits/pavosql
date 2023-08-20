@@ -25,7 +25,9 @@ func (p Page) NCells() uint16 {
 	return binary.BigEndian.Uint16(p[1:3])
 }
 
-func (p Page) Size() int { return len(p) }
+func (p Page) Size() uint16 {
+	return 5 + p.NCells()*p.cellSize()
+}
 
 func (p Page) cellSize() uint16 {
 	return binary.BigEndian.Uint16(p[3:5])
