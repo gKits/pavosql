@@ -3,6 +3,7 @@ package btree
 import (
 	"bytes"
 	"encoding/binary"
+	"fmt"
 	"slices"
 )
 
@@ -52,18 +53,18 @@ func (p Page) GetCellPos(i uint16) uint16 {
 // Returns an error if i is greater than NCells.
 func (p Page) GetCell(i uint16) (Cell, error) {
 	if i > p.NCells() {
-		return nil, ErrCellIndexOutBounds
+		return nil, fmt.Errorf("page: requested cell index %d, page only has %d", i, p.NCells())
 	}
 	return Cell(p[p.GetCellPos(i) : p.GetCellPos(i)+p.cellSize()]), nil
 }
 
 // Returns a new Page with the cell c inserted at the cell index i.
-// Returns an error if i is greater than NCells+1 or c's size isn't equal to cSize.
+// Returns an error if i is greater than NCells+1 or c's size isn't equal to cellSize.
 func (p Page) InsertCell(i uint16, c Cell) (Page, error) {
 	if i > p.NCells()+1 {
-		return nil, ErrCellIndexOutBounds
+		return nil, fmt.Errorf("page: requested index to insert %d, next index would be %d", i, p.NCells()+1)
 	} else if c.Size() != p.cellSize() {
-		return nil, ErrWrongCellSize
+		return nil, fmt.Errorf("page: to insert cell's size %d, page expects %d", c.Size(), p.cellSize())
 	}
 
 	inserted := Page{}
@@ -78,14 +79,14 @@ func (p Page) InsertCell(i uint16, c Cell) (Page, error) {
 // Returns an error if the page does not have a cell at i or c's size isn't equal to cSize
 func (p Page) UpdateCell(i uint16, c Cell) (Page, error) {
 	if c.Size() != p.cellSize() {
-		return nil, ErrWrongCellSize
+		return nil, fmt.Errorf("page: to insert cell's size %d, page expects %d", c.Size(), p.cellSize())
 	}
 
 	ogC, err := p.GetCell(i)
 	if err != nil {
 		return nil, err
 	} else if !slices.Equal(ogC.Key(), c.Key()) {
-		return nil, ErrCantUpdateWrongKey
+		return nil, fmt.Errorf("page: updated key needs to equal original")
 	}
 
 	updated := Page{}
