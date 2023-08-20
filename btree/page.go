@@ -3,7 +3,6 @@ package btree
 import (
 	"bytes"
 	"encoding/binary"
-	"fmt"
 	"slices"
 )
 
@@ -59,7 +58,7 @@ func (p Page) GetCell(i uint16) (Cell, error) {
 }
 
 // Returns a new Page with the cell c inserted at the cell index i.
-// Returns an error if i is greater than NCells+1 or c size isn't equal to cSize.
+// Returns an error if i is greater than NCells+1 or c's size isn't equal to cSize.
 func (p Page) InsertCell(i uint16, c Cell) (Page, error) {
 	if i > p.NCells()+1 {
 		return nil, ErrCellIndexOutBounds
@@ -67,12 +66,33 @@ func (p Page) InsertCell(i uint16, c Cell) (Page, error) {
 		return nil, ErrWrongCellSize
 	}
 
-	m := Page{}
-	copy(m, p)
-	m.setNCells(p.NCells() + 1)
-	m = slices.Insert(m, int(p.GetCellPos(i)), c...)
+	inserted := Page{}
+	copy(inserted, p)
+	inserted.setNCells(p.NCells() + 1)
+	inserted = slices.Insert(inserted, int(p.GetCellPos(i)), c...)
 
-	return m, nil
+	return inserted, nil
+}
+
+// Returns a new Page with the cell at index i update to the value of cell c.
+// Returns an error if the page does not have a cell at i or c's size isn't equal to cSize
+func (p Page) UpdateCell(i uint16, c Cell) (Page, error) {
+	if c.Size() != p.cellSize() {
+		return nil, ErrWrongCellSize
+	}
+
+	ogC, err := p.GetCell(i)
+	if err != nil {
+		return nil, err
+	} else if !slices.Equal(ogC.Key(), c.Key()) {
+		return nil, ErrCantUpdateWrongKey
+	}
+
+	updated := Page{}
+	copy(updated, p)
+	copy(updated[p.GetCellPos(i):], c)
+
+	return updated, nil
 }
 
 // Returns the cell index i for the given key k and a bool representing if the key exists in the page
