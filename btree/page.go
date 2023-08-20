@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
-	"math"
 	"slices"
 )
 
@@ -100,4 +99,21 @@ func (p Page) BinaryCellIdxLookup(k []byte) (i uint16, exists bool) {
 	}
 
 	return i, false
+}
+
+// Returns two pages l and r where l contains the first and r the second half of this pages cells.
+func (p Page) Split() (l, r Page) {
+	// left half
+	l.setType(p.Type())
+	l.setNCells(p.NCells() / 2)
+	l.setCellSize(p.cellSize())
+	l = append(l, p[:p.NCells()/2]...)
+
+	// right half
+	r.setType(p.Type())
+	r.setNCells(p.NCells()/2 + p.NCells()%2) // right page contains larger half when p.NCells is odd
+	r.setCellSize(p.cellSize())
+	r = append(r, p[p.NCells()/2:]...)
+
+	return l, r
 }
