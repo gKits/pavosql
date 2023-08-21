@@ -55,16 +55,16 @@ func (p Page) GetCellPos(i uint16) uint16 {
 // Returns an error if i is greater than NCells.
 func (p Page) GetCell(i uint16) (Cell, error) {
 	if i > p.NCells() {
-		return nil, fmt.Errorf("page: requested cell index %d, page only has %d", i, p.NCells())
+		return nil, fmt.Errorf("page: requested cell index %d, page only has %d cells", i, p.NCells())
 	}
 	return Cell(p[p.GetCellPos(i) : p.GetCellPos(i)+p.cellSize()]), nil
 }
 
-// Returns a new Page with the cell c inserted at the cell index i.
-// Returns an error if i is greater than NCells+1 or c's size isn't equal to cellSize.
+// Returns a new Page with the cell c inserted after the index i.
+// Returns an error if i is greater than NCells or c's size isn't equal to cellSize.
 func (p Page) InsertCell(i uint16, c Cell) (Page, error) {
-	if i > p.NCells()+1 {
-		return nil, fmt.Errorf("page: requested index to insert %d, next index would be %d", i, p.NCells()+1)
+	if i > p.NCells() {
+		return nil, fmt.Errorf("page: cannot insert cell after index %d, page only has %d cells", i, p.NCells())
 	} else if c.Size() != p.cellSize() {
 		return nil, fmt.Errorf("page: to insert cell's size %d, page expects %d", c.Size(), p.cellSize())
 	}
@@ -72,7 +72,7 @@ func (p Page) InsertCell(i uint16, c Cell) (Page, error) {
 	inserted := Page{}
 	copy(inserted, p)
 	inserted.setNCells(p.NCells() + 1)
-	inserted = slices.Insert(inserted, int(p.GetCellPos(i)), c...)
+	inserted = slices.Insert(inserted, int(p.GetCellPos(i))+1, c...)
 
 	return inserted, nil
 }
