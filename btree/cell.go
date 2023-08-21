@@ -33,3 +33,12 @@ func (c Cell) SetVal(v []byte) (Cell, error) {
 
 	return updated, nil
 }
+
+// Returns the pointer to the child page stored in the internal cell.
+// Returns an error if the type of the cell is not internal.
+func (c Cell) GetChildPtr() (uint64, error) {
+	if c.Type() != INTERNAL_CELL {
+		return 0, fmt.Errorf("cell: non internal cell cannot contain a child pointer")
+	}
+	return binary.BigEndian.Uint64(c[5+c.kSize() : 5+c.kSize()+c.vSize()]), nil
+}
