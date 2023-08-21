@@ -46,7 +46,7 @@ func (p Page) setCellSize(cS uint16) {
 }
 
 // Returns the position of the i-th cell.
-// This is a theoretical position and it's not checked if it's out of bounds. Proceed with caution.
+// This is a theoretical position and it's not checked if i exceeds nCells. Proceed with caution.
 func (p Page) GetCellPos(i uint16) uint16 {
 	return 5 + i*p.cellSize()
 }
@@ -100,28 +100,39 @@ func (p Page) UpdateCell(i uint16, c Cell) (Page, error) {
 
 // Returns the cell index i for the given key k and a bool representing if the key exists in the page
 // by binary searching through the stored cells in the page.
-func (p Page) BinaryCellIdxLookup(k []byte) (i uint16, exists bool) {
+// The assumption is made that k is at least greater or equal to the pages first cells key meaning
+// if exists is false it must be assumed that k would be placed after i.
+func (p Page) BinSearchKeyIdx(k []byte) (i uint16, exists bool, err error) {
 	l := uint16(0)
 	r := uint16(p.NCells() - 1)
 
-	var c Cell
+	for {
+		i = (l + r) / 2
+		c, _ := p.GetCell(i) // error handling not needed since i is always less than NCells
 
-	for i = r / 2; l <= r; i = (l + r) / 2 {
-		c, _ = p.GetCell(i) // error handling not needed since i is always less than NCells
-		if cmp := bytes.Compare(k, c.Key()); cmp < 1 {
+		cmp := bytes.Compare(k, c.Key())
+		if cmp < 0 {
 			r = i - 1
-		} else if cmp > 1 {
+		} else if cmp > 0 {
 			l = i + 1
 		} else {
-			return i, true
+			exists = true
+			break
+		}
+
+		if l >= r {
+			if i == 0 && cmp < 0 {
+				err = fmt.Errorf(
+					"page: cannot find index for key '%s', has to be greater equal than first key on page",
+					k,
+				)
+			}
+			exists = false
+			break
 		}
 	}
 
-	if i == uint16(r) && bytes.Compare(c.Key(), k) > 1 {
-		i++
-	}
-
-	return i, false
+	return i, exists, nil
 }
 
 // Returns two pages l and r where l contains the first and r the second half of this pages cells.
