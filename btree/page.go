@@ -151,3 +151,32 @@ func (p Page) Split() (l, r Page) {
 
 	return l, r
 }
+
+// Merges page p and toMerge into one and returns it. ToMerge will be merged onto p (p left, toMerge right).
+// Returns an error if the page types don't match or if p's last key >= toMerge's first key to stay sorted.
+func (p Page) Merge(toMerge Page) (Page, error) {
+	if p.Type() != toMerge.Type() {
+		return nil, fmt.Errorf("page: could not merge pages, type does not match")
+	}
+
+	// p's last key needs to be less than toMerge's first key to successfully merge the pages
+	pLast, err := p.GetCell(p.NCells() - 1)
+	if err != nil {
+		return nil, fmt.Errorf("page: could not merge pages, last cell was not found: %e", err)
+	}
+	tMFirst, err := toMerge.GetCell(0)
+	if err != nil {
+		return nil, fmt.Errorf("page: could not merge pages, first cell was not found: %e", err)
+	}
+	if cmp := bytes.Compare(pLast.Key(), tMFirst.Key()); cmp >= 0 {
+		return nil, fmt.Errorf("page: could not merge pages, lefts last key >= rights first key")
+	}
+
+	merged := Page{}
+	merged.setType(p.Type())
+	merged.setNCells(p.NCells() + toMerge.NCells())
+	merged = append(merged, p[5:]...)
+	merged = append(merged, toMerge[5:]...)
+
+	return merged, nil
+}
