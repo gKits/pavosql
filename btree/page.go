@@ -52,18 +52,18 @@ func (p Page) GetCellPos(i uint16) uint16 {
 }
 
 // Returns i-th cell.
-// Returns an error if i is greater than NCells.
+// Returns an error if i is greater equal than NCells.
 func (p Page) GetCell(i uint16) (Cell, error) {
-	if i > p.NCells() {
+	if i >= p.NCells() {
 		return nil, fmt.Errorf("page: requested cell index %d, page only has %d cells", i, p.NCells())
 	}
 	return Cell(p[p.GetCellPos(i) : p.GetCellPos(i)+p.cellSize()]), nil
 }
 
 // Returns a new Page with the cell c inserted after the index i.
-// Returns an error if i is greater than NCells or c's size isn't equal to cellSize.
+// Returns an error if i is greater equal than NCells or c's size isn't equal to cellSize.
 func (p Page) InsertCell(i uint16, c Cell) (Page, error) {
-	if i > p.NCells() {
+	if i >= p.NCells() {
 		return nil, fmt.Errorf("page: cannot insert cell after index %d, page only has %d cells", i, p.NCells())
 	} else if c.Size() != p.cellSize() {
 		return nil, fmt.Errorf("page: to insert cell's size %d, page expects %d", c.Size(), p.cellSize())
