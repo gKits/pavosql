@@ -45,8 +45,8 @@ func (p Page) setCellSize(cS uint16) {
 	binary.BigEndian.PutUint16(p[3:5], cS)
 }
 
-// Returns the position of the i-th cell.
-// This is a theoretical position and it's not checked if i exceeds nCells. Proceed with caution.
+// Returns the position of the i-th cell. This is a theoretical position and
+// it's not checked if i exceeds nCells. Proceed with caution.
 func (p Page) GetCellPos(i uint16) uint16 {
 	return 5 + i*p.cellSize()
 }
@@ -60,8 +60,8 @@ func (p Page) GetCell(i uint16) (Cell, error) {
 	return Cell(p[p.GetCellPos(i) : p.GetCellPos(i)+p.cellSize()]), nil
 }
 
-// Returns a new Page with the cell c inserted after the index i.
-// Returns an error if i is greater equal than NCells or c's size isn't equal to cellSize.
+// Returns a new Page with the cell c inserted after the index i. Returns an
+// error if i is greater equal than NCells or c's size isn't equal to cellSize.
 func (p Page) InsertCell(i uint16, c Cell) (Page, error) {
 	if i >= p.NCells() {
 		return nil, fmt.Errorf("page: cannot insert cell after index %d, page only has %d cells", i, p.NCells())
@@ -78,7 +78,8 @@ func (p Page) InsertCell(i uint16, c Cell) (Page, error) {
 }
 
 // Returns a new Page with the cell at index i update to the value of cell c.
-// Returns an error if the page does not have a cell at i or c's size isn't equal to cSize
+// Returns an error if the page does not have a cell at i or c's size isn't
+// equal to cSize.
 func (p Page) UpdateCell(i uint16, c Cell) (Page, error) {
 	if c.Size() != p.cellSize() {
 		return nil, fmt.Errorf("page: to insert cell's size %d, page expects %d", c.Size(), p.cellSize())
@@ -98,10 +99,11 @@ func (p Page) UpdateCell(i uint16, c Cell) (Page, error) {
 	return updated, nil
 }
 
-// Returns the cell index i for the given key k and a bool representing if the key exists in the page
-// by binary searching through the stored cells in the page.
-// The assumption is made that k is at least greater or equal to the pages first cells key meaning
-// if exists is false it must be assumed that k would be placed after i.
+// Returns the cell index i for the given key k and a bool representing if the
+// key exists in the page by binary searching through the stored cells in the
+// page. The assumption is made that k is at least greater or equal to the pages
+// first cells key meaning if exists is false it must be assumed that k would be
+// placed after i.
 func (p Page) BinSearchKeyIdx(k []byte) (i uint16, exists bool, err error) {
 	l := uint16(0)
 	r := uint16(p.NCells() - 1)
@@ -135,7 +137,8 @@ func (p Page) BinSearchKeyIdx(k []byte) (i uint16, exists bool, err error) {
 	return i, exists, nil
 }
 
-// Returns two pages l and r where l contains the first and r the second half of this pages cells.
+// Returns two pages l and r where l contains the first and r the second half of
+// this pages cells.
 func (p Page) Split() (l, r Page) {
 	// left half
 	l.setType(p.Type())
@@ -152,8 +155,9 @@ func (p Page) Split() (l, r Page) {
 	return l, r
 }
 
-// Merges page p and toMerge into one and returns it. ToMerge will be merged onto p (p left, toMerge right).
-// Returns an error if the page types don't match or if p's last key >= toMerge's first key to stay sorted.
+// Merges page p and toMerge into one and returns it. ToMerge will be merged
+// onto p (p left, toMerge right). Returns an error if the page types don't
+// match or if p's last key >= toMerge's first key to stay sorted.
 func (p Page) Merge(toMerge Page) (Page, error) {
 	if p.Type() != toMerge.Type() {
 		return nil, fmt.Errorf("page: could not merge pages, type does not match")
