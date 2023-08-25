@@ -51,11 +51,10 @@ func (p Page) GetCellPos(i uint16) uint16 {
 	return 5 + i*p.cellSize()
 }
 
-// Returns i-th cell.
-// Returns an error if i is greater equal than NCells.
+// Returns i-th cell. Returns an error if i is greater equal than NCells.
 func (p Page) GetCell(i uint16) (Cell, error) {
 	if i >= p.NCells() {
-		return nil, fmt.Errorf("page: requested cell index %d, page only has %d cells", i, p.NCells())
+		return nil, fmt.Errorf("page: index out of n-cell range")
 	}
 	return Cell(p[p.GetCellPos(i) : p.GetCellPos(i)+p.cellSize()]), nil
 }
@@ -64,9 +63,9 @@ func (p Page) GetCell(i uint16) (Cell, error) {
 // error if i is greater equal than NCells or c's size isn't equal to cellSize.
 func (p Page) InsertCell(i uint16, c Cell) (Page, error) {
 	if i >= p.NCells() {
-		return nil, fmt.Errorf("page: cannot insert cell after index %d, page only has %d cells", i, p.NCells())
+		return nil, fmt.Errorf("page: index out of n-cell range")
 	} else if c.Size() != p.cellSize() {
-		return nil, fmt.Errorf("page: to insert cell's size %d, page expects %d", c.Size(), p.cellSize())
+		return nil, fmt.Errorf("page: cell has wrong size for page")
 	}
 
 	inserted := Page{}
@@ -82,7 +81,7 @@ func (p Page) InsertCell(i uint16, c Cell) (Page, error) {
 // equal to cSize.
 func (p Page) UpdateCell(i uint16, c Cell) (Page, error) {
 	if c.Size() != p.cellSize() {
-		return nil, fmt.Errorf("page: to insert cell's size %d, page expects %d", c.Size(), p.cellSize())
+		return nil, fmt.Errorf("page: cell has wrong size for page")
 	}
 
 	ogC, err := p.GetCell(i)
@@ -101,7 +100,7 @@ func (p Page) UpdateCell(i uint16, c Cell) (Page, error) {
 
 func (p Page) UpdateInternalCell(i uint16, ptr uint64) (Page, error) {
 	if p.Type() != INTERNAL_PAGE {
-		return nil, fmt.Errorf("page: cannot update non internal cell with child pointer")
+		return nil, fmt.Errorf("page: ptr are only stored on internal pages")
 	}
 
 	c, err := p.GetCell(i)
@@ -132,7 +131,7 @@ func (p Page) BinSearchKeyIdx(k []byte) (i uint16, exists bool, err error) {
 
 	for {
 		i = (l + r) / 2
-		c, _ := p.GetCell(i) // error handling not needed since i is always less than NCells
+		c, _ := p.GetCell(i)
 
 		cmp := bytes.Compare(k, c.Key())
 		if cmp < 0 {
@@ -146,10 +145,7 @@ func (p Page) BinSearchKeyIdx(k []byte) (i uint16, exists bool, err error) {
 
 		if l >= r {
 			if i == 0 && cmp < 0 {
-				err = fmt.Errorf(
-					"page: cannot find index for key '%s', has to be greater equal than first key on page",
-					k,
-				)
+				err = fmt.Errorf("page: index of cell is less than 0")
 			}
 			exists = false
 			break
@@ -170,7 +166,7 @@ func (p Page) Split() (l, r Page) {
 
 	// right half
 	r.setType(p.Type())
-	r.setNCells(p.NCells()/2 + p.NCells()%2) // right page contains larger half when p.NCells is odd
+	r.setNCells(p.NCells()/2 + p.NCells()%2)
 	r.setCellSize(p.cellSize())
 	r = append(r, p[p.NCells()/2:]...)
 
@@ -182,20 +178,19 @@ func (p Page) Split() (l, r Page) {
 // match or if p's last key >= toMerge's first key to stay sorted.
 func (p Page) Merge(toMerge Page) (Page, error) {
 	if p.Type() != toMerge.Type() {
-		return nil, fmt.Errorf("page: could not merge pages, type does not match")
+		return nil, fmt.Errorf("page: cannot merge pages of different types")
 	}
 
-	// p's last key needs to be less than toMerge's first key to successfully merge the pages
 	pLast, err := p.GetCell(p.NCells() - 1)
 	if err != nil {
-		return nil, fmt.Errorf("page: could not merge pages, last cell was not found: %e", err)
+		return nil, err
 	}
 	tMFirst, err := toMerge.GetCell(0)
 	if err != nil {
-		return nil, fmt.Errorf("page: could not merge pages, first cell was not found: %e", err)
+		return nil, err
 	}
 	if cmp := bytes.Compare(pLast.Key(), tMFirst.Key()); cmp >= 0 {
-		return nil, fmt.Errorf("page: could not merge pages, lefts last key >= rights first key")
+		return nil, fmt.Errorf("page: last key >= merged pages first key")
 	}
 
 	merged := Page{}

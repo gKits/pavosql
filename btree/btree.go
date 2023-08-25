@@ -13,12 +13,16 @@ type BTree struct {
 	free  func(ptr uint64)
 }
 
+// Inserts the cell into the correct leaf by recursively walking down the B-Tree
+// and updating the internal cells pointers along the way. If a page exceeds the
+// page size limit it and the pointer to it stored in it's parent page will be
+// split.
 func (bt *BTree) bTreeInsert(p Page, c Cell) (Page, error) {
 	i, exists, err := p.BinSearchKeyIdx(c.Key())
 	if err != nil {
 		return nil, err
-	} else if !exists {
-		return nil, fmt.Errorf("")
+	} else if exists {
+		return nil, fmt.Errorf("btree: cannot insert key that already exists")
 	}
 
 	inserted := Page{}
@@ -61,12 +65,14 @@ func (bt *BTree) bTreeInsert(p Page, c Cell) (Page, error) {
 	return inserted, nil
 }
 
+// Updates the cell on the correct leaf by recursively walking down the B-Tree
+// and updating the internal cells pointers along the way.
 func (bt *BTree) bTreeUpdate(p Page, c Cell) (Page, error) {
 	i, exists, err := p.BinSearchKeyIdx(c.Key())
 	if err != nil {
 		return nil, err
 	} else if !exists {
-		return nil, fmt.Errorf("")
+		return nil, fmt.Errorf("btree: cannot update key that does not exist")
 	}
 
 	updated := Page{}
@@ -75,7 +81,7 @@ func (bt *BTree) bTreeUpdate(p Page, c Cell) (Page, error) {
 	case LEAF_PAGE:
 		updated, err = p.UpdateCell(i, c)
 		if err != nil {
-			return nil, fmt.Errorf("")
+			return nil, err
 		}
 
 	case INTERNAL_PAGE:
@@ -85,14 +91,14 @@ func (bt *BTree) bTreeUpdate(p Page, c Cell) (Page, error) {
 
 		updated, err = bt.bTreeUpdate(child, c)
 		if err != nil {
-			return nil, fmt.Errorf("")
+			return nil, err
 		}
 
 		updatedPtr := bt.alloc(updated)
 
 		updated, err = p.UpdateInternalCell(i, updatedPtr)
 		if err != nil {
-			return nil, fmt.Errorf("")
+			return nil, err
 		}
 		bt.free(childPtr)
 
@@ -110,21 +116,21 @@ func (bt BTree) splitChildPtr(i uint16, parent, child Page) (Page, error) {
 
 	split, err := parent.UpdateInternalCell(i, lPtr)
 	if err != nil {
-		return nil, fmt.Errorf("")
+		return nil, err
 	}
 
 	rCell, err := r.GetCell(0)
 	if err != nil {
-		return nil, fmt.Errorf("")
+		return nil, err
 	}
 	rCell, err = rCell.SetChildPtr(rPtr)
 	if err != nil {
-		return nil, fmt.Errorf("")
+		return nil, err
 	}
 
 	split, err = parent.InsertCell(i, rCell)
 	if err != nil {
-		return nil, fmt.Errorf("")
+		return nil, err
 	}
 
 	return split, nil

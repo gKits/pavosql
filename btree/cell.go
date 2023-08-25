@@ -38,11 +38,11 @@ func (c Cell) vSize() uint16 {
 	return binary.BigEndian.Uint16(c[3:5])
 }
 
-// Returns a new cell with the value set to v.
-// Returns an error if the size of v doesn't equal vSize of original cell c.
+// Returns a new cell with the value set to v. Returns an error if the size of v
+// doesn't equal vSize of original cell c.
 func (c Cell) SetVal(v []byte) (Cell, error) {
 	if uint16(len(v)) != c.vSize() {
-		return nil, fmt.Errorf("cell: size of set value %d needs to equal vSize %d", len(v), c.vSize())
+		return nil, fmt.Errorf("cell: value has wrong size")
 	}
 	updated := Cell{}
 	copy(updated, c)
@@ -51,11 +51,11 @@ func (c Cell) SetVal(v []byte) (Cell, error) {
 	return updated, nil
 }
 
-// Returns a new internal cell with a new child ptr.
-// Returns an error if the type of the cell is not internal.
+// Returns a new internal cell with a new child ptr. Returns an error if the
+// type of the cell is not internal.
 func (c Cell) SetChildPtr(ptr uint64) (Cell, error) {
 	if c.Type() != INTERNAL_CELL {
-		return nil, fmt.Errorf("cell: non internal cell cannot contain a child pointer")
+		return nil, fmt.Errorf("cell: cannot store ptr in non internal cell")
 	}
 
 	updated := Cell{}
@@ -65,11 +65,11 @@ func (c Cell) SetChildPtr(ptr uint64) (Cell, error) {
 	return updated, nil
 }
 
-// Returns the pointer to the child page stored in the internal cell.
-// Returns an error if the type of the cell is not internal.
+// Returns the pointer to the child page stored in the internal cell. Returns an
+// error if the type of the cell is not internal.
 func (c Cell) GetChildPtr() (uint64, error) {
 	if c.Type() != INTERNAL_CELL {
-		return 0, fmt.Errorf("cell: non internal cell cannot contain a child pointer")
+		return 0, fmt.Errorf("cell: cannot get ptr from non internal cell")
 	}
 	return binary.BigEndian.Uint64(c[5+c.kSize() : 5+c.kSize()+c.vSize()]), nil
 }
