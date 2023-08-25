@@ -8,6 +8,10 @@
 *.so
 *.dylib
 
+# pavod and pavosql binaries
+pavod
+pavosql
+
 # Test binary, built with `go test -c`
 *.test
 
@@ -19,3 +23,8 @@
 
 # Go workspace file
 go.work
+
+# Hugo Docs
+docs/.hugo_build.lock
+public
+docs/public
