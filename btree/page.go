@@ -99,6 +99,28 @@ func (p Page) UpdateCell(i uint16, c Cell) (Page, error) {
 	return updated, nil
 }
 
+func (p Page) UpdateInternalCell(i uint16, ptr uint64) (Page, error) {
+	if p.Type() != INTERNAL_PAGE {
+		return nil, fmt.Errorf("page: cannot update non internal cell with child pointer")
+	}
+
+	c, err := p.GetCell(i)
+	if err != nil {
+		return nil, nil
+	}
+
+	c, err = c.SetChildPtr(ptr)
+	if err != nil {
+		return nil, nil
+	}
+
+	updated := Page{}
+	copy(updated, p)
+	copy(updated[p.GetCellPos(i):], c)
+
+	return updated, nil
+}
+
 // Returns the cell index i for the given key k and a bool representing if the
 // key exists in the page by binary searching through the stored cells in the
 // page. The assumption is made that k is at least greater or equal to the pages
