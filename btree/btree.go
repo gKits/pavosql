@@ -1,7 +1,5 @@
 package btree
 
-import "fmt"
-
 const (
 	PAGE_SIZE uint16 = 4096
 )
@@ -21,17 +19,22 @@ func (bt *BTree) bTreeInsert(p Page, c Cell) (Page, error) {
 	i, exists, err := p.BinSearchKeyIdx(c.Key())
 	if err != nil {
 		return nil, err
-	} else if exists {
-		return nil, fmt.Errorf("btree: cannot insert key that already exists")
 	}
 
 	inserted := Page{}
 	switch p.Type() {
 
 	case LEAF_PAGE:
-		inserted, err = p.InsertCell(i, c)
-		if err != nil {
-			return nil, err
+		if !exists {
+			inserted, err = p.InsertCell(i, c)
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			inserted, err = p.UpdateCell(i, c)
+			if err != nil {
+				return nil, err
+			}
 		}
 
 	case INTERNAL_PAGE:
@@ -65,50 +68,9 @@ func (bt *BTree) bTreeInsert(p Page, c Cell) (Page, error) {
 	return inserted, nil
 }
 
-// Updates the cell on the correct leaf by recursively walking down the B-Tree
-// and updating the internal cells pointers along the way.
-func (bt *BTree) bTreeUpdate(p Page, c Cell) (Page, error) {
-	i, exists, err := p.BinSearchKeyIdx(c.Key())
-	if err != nil {
-		return nil, err
-	} else if !exists {
-		return nil, fmt.Errorf("btree: cannot update key that does not exist")
-	}
-
-	updated := Page{}
-	switch p.Type() {
-
-	case LEAF_PAGE:
-		updated, err = p.UpdateCell(i, c)
-		if err != nil {
-			return nil, err
-		}
-
-	case INTERNAL_PAGE:
-		ptrCell, _ := p.GetCell(i)
-		childPtr, _ := ptrCell.GetChildPtr()
-		child := bt.get(childPtr)
-
-		updated, err = bt.bTreeUpdate(child, c)
-		if err != nil {
-			return nil, err
-		}
-
-		updatedPtr := bt.alloc(updated)
-
-		updated, err = p.UpdateInternalCell(i, updatedPtr)
-		if err != nil {
-			return nil, err
-		}
-		bt.free(childPtr)
-
-	default:
-
-	}
-
-	return updated, nil
-}
-
+// Splits the child page and the pointer to it stored in the parent page into
+// two and returns a new parent page with the two pointers pointing to each of
+// the halfs.
 func (bt BTree) splitChildPtr(i uint16, parent, child Page) (Page, error) {
 	l, r := child.Split()
 	lPtr := bt.alloc(l)
