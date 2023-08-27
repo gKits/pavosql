@@ -76,7 +76,26 @@ func (p Page) InsertCell(i uint16, c Cell) (Page, error) {
 	return inserted, nil
 }
 
-// Returns a new Page with the cell at index i update to the value of cell c.
+// Returns a new Page without the cell at index i. Returns an error if i is out
+// of range.
+func (p Page) DeleteCell(i uint16) (Page, error) {
+	if i >= p.NCells() {
+		return nil, fmt.Errorf("page: index out of n-cell range")
+	}
+
+	deleted := Page{}
+	copy(deleted, p)
+	deleted.setNCells(p.NCells() - 1)
+	deleted = slices.Delete(
+		deleted,
+		int(p.GetCellPos(i)),
+		int(p.GetCellPos(i)+p.cellSize()),
+	)
+
+	return deleted, nil
+}
+
+// Returns a new Page with the cell at index i updated to the value of cell c.
 // Returns an error if the page does not have a cell at i or c's size isn't
 // equal to cSize.
 func (p Page) UpdateCell(i uint16, c Cell) (Page, error) {
