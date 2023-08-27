@@ -117,6 +117,19 @@ func (p Page) UpdateCell(i uint16, c Cell) (Page, error) {
 	return updated, nil
 }
 
+// Returns the child pointer stored in the internal cell at i. Returns an error
+// if the page type is not internal or the cell does not exist.
+func (p Page) GetInternalCell(i uint16) (uint64, error) {
+	if p.Type() != INTERNAL_PAGE {
+		return 0, fmt.Errorf("page: ptr are only stored on internal pages")
+	}
+	c, err := p.GetCell(i)
+	if err != nil {
+		return 0, err
+	}
+	return c.GetChildPtr()
+}
+
 func (p Page) UpdateInternalCell(i uint16, ptr uint64) (Page, error) {
 	if p.Type() != INTERNAL_PAGE {
 		return nil, fmt.Errorf("page: ptr are only stored on internal pages")
