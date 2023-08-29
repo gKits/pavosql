@@ -152,39 +152,32 @@ func (p Page) UpdateInternalCell(i uint16, ptr uint64) (Page, error) {
 	return updated, nil
 }
 
-// Returns the cell index i for the given key k and a bool representing if the
-// key exists in the page by binary searching through the stored cells in the
-// page. The assumption is made that k is at least greater or equal to the pages
-// first cells key meaning if exists is false it must be assumed that k would be
-// placed after i.
-func (p Page) BinSearchKeyIdx(k []byte) (i uint16, exists bool, err error) {
+// Returns the cell index for the given key k and a bool representing if the key
+// exists by binary searching over the pages cells.
+func (p Page) BinSearchKeyIdx(k []byte) (uint16, bool) {
 	l := uint16(0)
 	r := uint16(p.NCells() - 1)
 
-	for {
-		i = (l + r) / 2
+	var i uint16
+	var cmp int
+	for i = r / 2; l < r; i = (l + r) / 2 {
 		c, _ := p.GetCell(i)
 
-		cmp := bytes.Compare(k, c.Key())
+		cmp = bytes.Compare(k, c.Key())
 		if cmp < 0 {
 			r = i - 1
 		} else if cmp > 0 {
 			l = i + 1
 		} else {
-			exists = true
-			break
-		}
-
-		if l >= r {
-			if i == 0 && cmp < 0 {
-				err = fmt.Errorf("page: index of cell is less than 0")
-			}
-			exists = false
-			break
+			return i, true
 		}
 	}
 
-	return i, exists, nil
+	if cmp > 1 {
+		i++
+	}
+
+	return i, false
 }
 
 // Returns two pages l and r where l contains the first and r the second half of
