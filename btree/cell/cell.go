@@ -1,4 +1,4 @@
-package btree
+package cell
 
 import (
 	"encoding/binary"
@@ -14,7 +14,7 @@ const (
 
 type Cell []byte
 
-func newDataCell(k []byte, v []byte) Cell {
+func NewDataCell(k []byte, v []byte) Cell {
 	c := Cell{byte(DATA_CELL)}
 	binary.BigEndian.AppendUint16(c, uint16(len(k)))
 	binary.BigEndian.AppendUint16(c, uint16(len(v)))
@@ -24,7 +24,7 @@ func newDataCell(k []byte, v []byte) Cell {
 	return c
 }
 
-func newInternalCell(k []byte, ptr uint64) Cell {
+func NewInternalCell(k []byte, ptr uint64) Cell {
 	c := Cell{byte(INTERNAL_CELL)}
 	binary.BigEndian.AppendUint16(c, uint16(len(k)))
 	binary.BigEndian.AppendUint16(c, 8)

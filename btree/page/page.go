@@ -1,9 +1,10 @@
-package btree
+package page
 
 import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
+	"github.com/gKits/PavoSQL/btree/cell"
 	"slices"
 )
 
@@ -16,6 +17,13 @@ const (
 )
 
 type Page []byte
+
+func NewInternalPage(c cell.Cell) Page {
+	p := Page{byte(INTERNAL_PAGE)}
+	binary.BigEndian.AppendUint16(p, 1)
+	p = append(p, c...)
+	return p
+}
 
 func (p Page) Type() PageType {
 	return PageType(p[0])
@@ -52,16 +60,16 @@ func (p Page) GetCellPos(i uint16) uint16 {
 }
 
 // Returns i-th cell. Returns an error if i is greater equal than NCells.
-func (p Page) GetCell(i uint16) (Cell, error) {
+func (p Page) GetCell(i uint16) (cell.Cell, error) {
 	if i >= p.NCells() {
 		return nil, fmt.Errorf("page: index out of n-cell range")
 	}
-	return Cell(p[p.GetCellPos(i) : p.GetCellPos(i)+p.cellSize()]), nil
+	return cell.Cell(p[p.GetCellPos(i) : p.GetCellPos(i)+p.cellSize()]), nil
 }
 
 // Returns a new Page with the cell c inserted after the index i. Returns an
 // error if i is greater equal than NCells or c's size isn't equal to cellSize.
-func (p Page) InsertCell(i uint16, c Cell) (Page, error) {
+func (p Page) InsertCell(i uint16, c cell.Cell) (Page, error) {
 	if i >= p.NCells() {
 		return nil, fmt.Errorf("page: index out of n-cell range")
 	} else if c.Size() != p.cellSize() {
@@ -98,7 +106,7 @@ func (p Page) DeleteCell(i uint16) (Page, error) {
 // Returns a new Page with the cell at index i updated to the value of cell c.
 // Returns an error if the page does not have a cell at i or c's size isn't
 // equal to cSize.
-func (p Page) UpdateCell(i uint16, c Cell) (Page, error) {
+func (p Page) UpdateCell(i uint16, c cell.Cell) (Page, error) {
 	if c.Size() != p.cellSize() {
 		return nil, fmt.Errorf("page: cell has wrong size for page")
 	}
