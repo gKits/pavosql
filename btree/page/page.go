@@ -25,6 +25,13 @@ func NewInternalPage(c cell.Cell) Page {
 	return p
 }
 
+func NewLeafPage(c cell.Cell) Page {
+	p := Page{byte(INTERNAL_PAGE)}
+	binary.BigEndian.AppendUint16(p, 1)
+	p = append(p, c...)
+	return p
+}
+
 func (p Page) Type() PageType {
 	return PageType(p[0])
 }
