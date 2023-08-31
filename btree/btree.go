@@ -55,6 +55,9 @@ func (bt *BTree) Insert(c cell.Cell) error {
 
 // Deletes the cell the key k from the BTree.
 func (bt *BTree) Delete(k []byte) error {
+	if bt.root == 0 {
+		return fmt.Errorf("cannot delete from empty tree")
+	}
 	root := bt.get(bt.root)
 
 	deleted, err := bt.bTreeDelete(root, k)
