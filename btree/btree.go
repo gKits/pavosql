@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	PAGE_SIZE uint16 = 4096
+	PAGE_SIZE = 4096
 )
 
 type BTree struct {
