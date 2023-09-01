@@ -1,8 +1,6 @@
 +++
-Title = "Docs"
-Weight = 2
+Title = "Getting started"
+Weight = 1
 bookFlatSection = true
 draft = true
 +++
-
-# Documentation
