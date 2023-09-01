@@ -26,6 +26,6 @@ path = "github.com/alex-shpak/hugo-book"
 BookTheme = "dark"
 BookToc = true
 BookSection = "docs"
-BookLogo = ""
+BookLogo = "favicon-32x32.png"
 BookRepo = "github.com/gKits/PavoSQL"
 BookCommitPath = "commit"
