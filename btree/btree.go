@@ -17,6 +17,15 @@ type BTree struct {
 	free  func(ptr uint64)
 }
 
+func NewBTree(
+	root uint64,
+	get func(uint64) page.Page,
+	alloc func(page.Page) uint64,
+	free func(uint64),
+) BTree {
+	return BTree{root, get, alloc, free}
+}
+
 // Inserts the cell c into the BTree.
 func (bt *BTree) Insert(c cell.Cell) error {
 	if bt.root == 0 {
