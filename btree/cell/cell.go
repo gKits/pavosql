@@ -3,19 +3,14 @@ package cell
 import (
 	"encoding/binary"
 	"fmt"
-)
 
-type CellType uint8
-
-const (
-	INTERNAL_CELL CellType = iota
-	DATA_CELL
+	"github.com/gKits/PavoSQL/btree/utils"
 )
 
 type Cell []byte
 
 func NewDataCell(k []byte, v []byte) Cell {
-	c := Cell{byte(DATA_CELL)}
+	c := Cell{byte(utils.LEAF)}
 	binary.BigEndian.AppendUint16(c, uint16(len(k)))
 	binary.BigEndian.AppendUint16(c, uint16(len(v)))
 	c = append(c, k...)
@@ -25,7 +20,7 @@ func NewDataCell(k []byte, v []byte) Cell {
 }
 
 func NewInternalCell(k []byte, ptr uint64) Cell {
-	c := Cell{byte(INTERNAL_CELL)}
+	c := Cell{byte(utils.INTERN)}
 	binary.BigEndian.AppendUint16(c, uint16(len(k)))
 	binary.BigEndian.AppendUint16(c, 8)
 	c = append(c, k...)
@@ -34,8 +29,8 @@ func NewInternalCell(k []byte, ptr uint64) Cell {
 	return c
 }
 
-func (c Cell) Type() CellType {
-	return CellType(c[0])
+func (c Cell) Type() utils.Type {
+	return utils.Type(c[0])
 }
 
 func (c Cell) Size() uint16 {
@@ -74,7 +69,7 @@ func (c Cell) SetVal(v []byte) (Cell, error) {
 // Returns a new internal cell with a new child ptr. Returns an error if the
 // type of the cell is not internal.
 func (c Cell) SetChildPtr(ptr uint64) (Cell, error) {
-	if c.Type() != INTERNAL_CELL {
+	if c.Type() != utils.INTERN {
 		return nil, fmt.Errorf("cell: cannot store ptr in non internal cell")
 	}
 
@@ -88,7 +83,7 @@ func (c Cell) SetChildPtr(ptr uint64) (Cell, error) {
 // Returns the pointer to the child page stored in the internal cell. Returns an
 // error if the type of the cell is not internal.
 func (c Cell) GetChildPtr() (uint64, error) {
-	if c.Type() != INTERNAL_CELL {
+	if c.Type() != utils.INTERN {
 		return 0, fmt.Errorf("cell: cannot get ptr from non internal cell")
 	}
 	return binary.BigEndian.Uint64(c[5+c.kSize() : 5+c.kSize()+c.vSize()]), nil
