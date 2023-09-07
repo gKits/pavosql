@@ -3,7 +3,7 @@ package node
 import (
 	"bytes"
 	"encoding/binary"
-	"fmt"
+	"errors"
 	"slices"
 
 	"github.com/gKits/PavoSQL/btree/cell"
@@ -58,19 +58,28 @@ func (n Node) setCellPtr(i, ptr uint16) {
 	binary.BigEndian.PutUint16(n[NODE_HEAD+i*2:NODE_HEAD+2+i*2], ptr)
 }
 
-func (n Node) GetCell(i uint16) cell.Cell {
+func (n Node) GetCell(i uint16) (cell.Cell, error) {
 	if i >= n.NCells() {
-		panic("page: index out of n-cell range")
+		return nil, errors.New("page: index out of n-cell range")
 	}
 	kSize := binary.BigEndian.Uint16(n[n.getCellPtr(i):])
 	vSize := binary.BigEndian.Uint16(n[n.getCellPtr(i)+2:])
 
-	return cell.Cell(n[n.getCellPtr(i) : n.getCellPtr(i)+4+kSize+vSize])
+	return cell.Cell(n[n.getCellPtr(i) : n.getCellPtr(i)+4+kSize+vSize]), nil
 }
 
-func (n Node) InsertCell(i uint16, c cell.Cell) Node {
+func (n Node) getCells() []cell.Cell {
+	cells := []cell.Cell{}
+	for i := uint16(0); i < n.NCells(); i++ {
+		c, _ := n.GetCell(i)
+		cells = append(cells, c)
+	}
+	return cells
+}
+
+func (n Node) InsertCell(i uint16, c cell.Cell) (Node, error) {
 	if i > n.NCells() {
-		panic("page: index out of n-cell range")
+		return nil, errors.New("page: index out of n-cell range")
 	}
 
 	inserted := Node{}
@@ -85,15 +94,14 @@ func (n Node) InsertCell(i uint16, c cell.Cell) Node {
 		inserted.setCellPtr(i, cur+c.Size())
 	}
 
-	return inserted
+	return inserted, nil
 }
 
-func (n Node) DeleteCell(i uint16) Node {
-	if i >= n.NCells() {
-		panic("page: index out of n-cell range")
+func (n Node) DeleteCell(i uint16) (Node, error) {
+	c, err := n.GetCell(i)
+	if err != nil {
+		return nil, err
 	}
-
-	c := n.GetCell(i)
 
 	deleted := Node{}
 	copy(deleted, n)
@@ -111,76 +119,68 @@ func (n Node) DeleteCell(i uint16) Node {
 		deleted.setCellPtr(i, cur-c.Size())
 	}
 
-	return deleted
+	return deleted, nil
 }
 
-// Returns a new Page with the cell at index i updated to the value of cell c.
-// Returns an error if the page does not have a cell at i or c's size isn't
-// equal to cSize.
-func (p Page) UpdateCell(i uint16, c cell.Cell) (Page, error) {
-	if c.Size() != p.cellSize() {
-		return nil, fmt.Errorf("page: cell has wrong size for page")
-	}
-
-	ogC, err := p.GetCell(i)
+func (n Node) UpdateCell(i uint16, c cell.Cell) (Node, error) {
+	og, err := n.GetCell(i)
 	if err != nil {
 		return nil, err
-	} else if !slices.Equal(ogC.Key(), c.Key()) {
-		return nil, fmt.Errorf("page: updated key needs to equal original")
 	}
 
-	updated := Page{}
-	copy(updated, p)
-	copy(updated[p.GetCellPos(i):], c)
+	if !slices.Equal(og.Key(), c.Key()) {
+		return nil, errors.New("page: updated key needs to equal original")
+	}
+
+	updated := Node{}
+	copy(updated, n)
+	updated = slices.Replace(updated, int(n.getCellPtr(i)), int(n.getCellPtr(i+1)), c...)
 
 	return updated, nil
 }
 
-// Returns the child pointer stored in the internal cell at i. Returns an error
-// if the page type is not internal or the cell does not exist.
-func (p Page) GetInternalCell(i uint16) (uint64, error) {
-	if p.Type() != INTERNAL_PAGE {
-		return 0, fmt.Errorf("page: ptr are only stored on internal pages")
+func (n Node) GetInternalCell(i uint16) (uint64, error) {
+	if n.Type() != utils.INTERN {
+		return 0, errors.New("page: ptr are only stored on internal pages")
 	}
-	c, err := p.GetCell(i)
+	c, err := n.GetCell(i)
 	if err != nil {
 		return 0, err
 	}
+
 	return c.GetChildPtr()
 }
 
-func (p Page) UpdateInternalCell(i uint16, ptr uint64) (Page, error) {
-	if p.Type() != INTERNAL_PAGE {
-		return nil, fmt.Errorf("page: ptr are only stored on internal pages")
+func (n Node) UpdateInternalCell(i uint16, ptr uint64) (Node, error) {
+	if n.Type() != utils.INTERN {
+		return nil, errors.New("page: ptr are only stored on internal pages")
 	}
 
-	c, err := p.GetCell(i)
+	c, err := n.GetCell(i)
 	if err != nil {
-		return nil, nil
+		return nil, err
 	}
 
 	c, err = c.SetChildPtr(ptr)
 	if err != nil {
-		return nil, nil
+		panic(err)
 	}
 
-	updated := Page{}
-	copy(updated, p)
-	copy(updated[p.GetCellPos(i):], c)
+	updated := Node{}
+	copy(updated, n)
+	updated = slices.Replace(updated, int(n.getCellPtr(i)), int(n.getCellPtr(i+1)), c...)
 
-	return updated, nil
+	return n.UpdateCell(i, c)
 }
 
-// Returns the cell index for the given key k and a bool representing if the key
-// exists by binary searching over the pages cells.
-func (p Page) BinSearchKeyIdx(k []byte) (uint16, bool) {
+func (n Node) BinSearchKeyIdx(k []byte) (uint16, bool) {
 	l := uint16(0)
-	r := uint16(p.NCells() - 1)
+	r := uint16(n.NCells() - 1)
 
 	var i uint16
 	var cmp int
 	for i = r / 2; l < r; i = (l + r) / 2 {
-		c, _ := p.GetCell(i)
+		c, _ := n.GetCell(i)
 
 		cmp = bytes.Compare(k, c.Key())
 		if cmp < 0 {
@@ -199,49 +199,27 @@ func (p Page) BinSearchKeyIdx(k []byte) (uint16, bool) {
 	return i, false
 }
 
-// Returns two pages l and r where l contains the first and r the second half of
-// this pages cells.
-func (p Page) Split() (l, r Page) {
-	// left half
-	l.setType(p.Type())
-	l.setNCells(p.NCells() / 2)
-	l.setCellSize(p.cellSize())
-	l = append(l, p[:p.NCells()/2]...)
+func (n Node) Split() (Node, Node) {
+	c := n.getCells()
 
-	// right half
-	r.setType(p.Type())
-	r.setNCells(p.NCells()/2 + p.NCells()%2)
-	r.setCellSize(p.cellSize())
-	r = append(r, p[p.NCells()/2:]...)
+	l := NewNode(n.Type(), c[:n.NCells()/2]...)
+	r := NewNode(n.Type(), c[n.NCells()/2:]...)
 
 	return l, r
 }
 
-// Merges page p and toMerge into one and returns it. ToMerge will be merged
-// onto p (p left, toMerge right). Returns an error if the page types don't
-// match or if p's last key >= toMerge's first key to stay sorted.
-func (p Page) Merge(toMerge Page) (Page, error) {
-	if p.Type() != toMerge.Type() {
-		return nil, fmt.Errorf("page: cannot merge pages of different types")
+func (n Node) Merge(toMerge Node) (Node, error) {
+	if n.Type() != toMerge.Type() {
+		return nil, errors.New("page: cannot merge pages of different types")
 	}
 
-	pLast, err := p.GetCell(p.NCells() - 1)
-	if err != nil {
-		return nil, err
-	}
-	tMFirst, err := toMerge.GetCell(0)
-	if err != nil {
-		return nil, err
-	}
-	if cmp := bytes.Compare(pLast.Key(), tMFirst.Key()); cmp >= 0 {
-		return nil, fmt.Errorf("page: last key >= merged pages first key")
-	}
+	nCells := n.getCells()
+	tMCells := n.getCells()
 
-	merged := Page{}
-	merged.setType(p.Type())
-	merged.setNCells(p.NCells() + toMerge.NCells())
-	merged = append(merged, p[5:]...)
-	merged = append(merged, toMerge[5:]...)
+	if cmp := bytes.Compare(nCells[n.NCells()-1].Key(), tMCells[0].Key()); cmp >= 0 {
+		return nil, errors.New("page: last key >= merged pages first key")
+	}
+	nCells = append(nCells, tMCells...)
 
-	return merged, nil
+	return NewNode(n.Type(), nCells...), nil
 }
