@@ -16,7 +16,7 @@ const (
 
 type Node []byte
 
-func NewNode(t utils.Type, cells ...cell.Cell) Node {
+func NewNode(t utils.Type, cells ...cell.Cell) (Node, error) {
 	n := make([]byte, 3+2*len(cells))
 
 	n[0] = byte(t)
@@ -24,14 +24,14 @@ func NewNode(t utils.Type, cells ...cell.Cell) Node {
 
 	for i, c := range cells {
 		if c.Type() != t {
-			panic("node: non matching cell and node type")
+			return nil, errors.New("node: non matching cell and node type")
 		}
 
 		binary.BigEndian.PutUint16(n[3+2*i:5+2*i], uint16(len(n)))
 		n = append(n, c...)
 	}
 
-	return n
+	return n, nil
 }
 
 func (n Node) Type() utils.Type {
@@ -202,8 +202,8 @@ func (n Node) BinSearchKeyIdx(k []byte) (uint16, bool) {
 func (n Node) Split() (Node, Node) {
 	c := n.getCells()
 
-	l := NewNode(n.Type(), c[:n.NCells()/2]...)
-	r := NewNode(n.Type(), c[n.NCells()/2:]...)
+	l, _ := NewNode(n.Type(), c[:n.NCells()/2]...)
+	r, _ := NewNode(n.Type(), c[n.NCells()/2:]...)
 
 	return l, r
 }
@@ -221,5 +221,6 @@ func (n Node) Merge(toMerge Node) (Node, error) {
 	}
 	nCells = append(nCells, tMCells...)
 
-	return NewNode(n.Type(), nCells...), nil
+	merged, _ := NewNode(n.Type(), nCells...)
+	return merged, nil
 }
