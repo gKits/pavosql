@@ -2,6 +2,7 @@ package cell
 
 import (
 	"encoding/binary"
+	"errors"
 	"fmt"
 
 	"github.com/gKits/PavoSQL/btree/utils"
@@ -9,24 +10,38 @@ import (
 
 type Cell []byte
 
-func NewDataCell(k []byte, v []byte) Cell {
-	c := Cell{byte(utils.LEAF)}
+func NewCell(t utils.Type, k []byte, v any) (Cell, error) {
+	c := Cell{byte(t)}
 	binary.BigEndian.AppendUint16(c, uint16(len(k)))
-	binary.BigEndian.AppendUint16(c, uint16(len(v)))
-	c = append(c, k...)
-	c = append(c, v...)
 
-	return c
-}
+	switch t {
+	case utils.INTERN:
+		ptr, ok := v.(uint64)
+		if !ok {
+			return nil, errors.New("cell: internal cell requires uint64")
+		}
 
-func NewInternalCell(k []byte, ptr uint64) Cell {
-	c := Cell{byte(utils.INTERN)}
-	binary.BigEndian.AppendUint16(c, uint16(len(k)))
-	binary.BigEndian.AppendUint16(c, 8)
-	c = append(c, k...)
-	binary.BigEndian.AppendUint64(c, ptr)
+		binary.BigEndian.AppendUint16(c, 8)
+		c = append(c, k...)
+		binary.BigEndian.AppendUint64(c, ptr)
+		break
 
-	return c
+	case utils.LEAF:
+		val, ok := v.([]byte)
+		if !ok {
+			return nil, errors.New("cell: leaf cell requires bytes")
+		}
+
+		binary.BigEndian.AppendUint16(c, uint16(len(val)))
+		c = append(c, k...)
+		c = append(c, val...)
+		break
+
+	default:
+		return nil, errors.New("cell: unknown cell type")
+
+	}
+	return c, nil
 }
 
 func (c Cell) Type() utils.Type {
@@ -57,7 +72,7 @@ func (c Cell) vSize() uint16 {
 // doesn't equal vSize of original cell c.
 func (c Cell) SetVal(v []byte) (Cell, error) {
 	if uint16(len(v)) != c.vSize() {
-		return nil, fmt.Errorf("cell: value has wrong size")
+		return nil, errors.New("cell: value has wrong size")
 	}
 	updated := Cell{}
 	copy(updated, c)
@@ -70,7 +85,7 @@ func (c Cell) SetVal(v []byte) (Cell, error) {
 // type of the cell is not internal.
 func (c Cell) SetChildPtr(ptr uint64) (Cell, error) {
 	if c.Type() != utils.INTERN {
-		return nil, fmt.Errorf("cell: cannot store ptr in non internal cell")
+		return nil, errors.New("cell: cannot store ptr in non internal cell")
 	}
 
 	updated := Cell{}
@@ -84,7 +99,7 @@ func (c Cell) SetChildPtr(ptr uint64) (Cell, error) {
 // error if the type of the cell is not internal.
 func (c Cell) GetChildPtr() (uint64, error) {
 	if c.Type() != utils.INTERN {
-		return 0, fmt.Errorf("cell: cannot get ptr from non internal cell")
+		return 0, errors.New("cell: cannot get ptr from non internal cell")
 	}
 	return binary.BigEndian.Uint64(c[5+c.kSize() : 5+c.kSize()+c.vSize()]), nil
 }
