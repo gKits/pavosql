@@ -1,9 +1,11 @@
 package btree
 
 import (
-	"fmt"
+	"errors"
+
 	"github.com/gKits/PavoSQL/btree/cell"
-	"github.com/gKits/PavoSQL/btree/page"
+	"github.com/gKits/PavoSQL/btree/node"
+	"github.com/gKits/PavoSQL/btree/utils"
 )
 
 const (
@@ -12,15 +14,15 @@ const (
 
 type BTree struct {
 	root  uint64
-	get   func(ptr uint64) page.Page
-	alloc func(p page.Page) uint64
-	free  func(ptr uint64)
+	get   func(uint64) node.Node
+	alloc func(node.Node) uint64
+	free  func(uint64)
 }
 
 func NewBTree(
 	root uint64,
-	get func(uint64) page.Page,
-	alloc func(page.Page) uint64,
+	get func(uint64) node.Node,
+	alloc func(node.Node) uint64,
 	free func(uint64),
 ) BTree {
 	return BTree{root, get, alloc, free}
@@ -29,7 +31,7 @@ func NewBTree(
 // Inserts the cell c into the BTree.
 func (bt *BTree) Insert(c cell.Cell) error {
 	if bt.root == 0 {
-		root := page.NewLeafPage(c)
+		root, _ := node.NewNode(utils.LEAF, c)
 		bt.root = bt.alloc(root)
 		return nil
 	}
@@ -47,8 +49,9 @@ func (bt *BTree) Insert(c cell.Cell) error {
 		if err != nil {
 			return err
 		}
-		c = cell.NewInternalCell(c.Key(), insertedPtr)
-		root = page.NewInternalPage(c)
+		c, _ = cell.NewCell(utils.INTERN, c.Key(), insertedPtr)
+
+		root, _ = node.NewNode(utils.INTERN, c)
 
 		inserted, err = bt.splitChildPtr(0, root, inserted)
 		if err != nil {
@@ -65,7 +68,7 @@ func (bt *BTree) Insert(c cell.Cell) error {
 // Deletes the cell the key k from the BTree.
 func (bt *BTree) Delete(k []byte) error {
 	if bt.root == 0 {
-		return fmt.Errorf("cannot delete from empty tree")
+		return errors.New("cannot delete from empty tree")
 	}
 	root := bt.get(bt.root)
 
@@ -75,7 +78,7 @@ func (bt *BTree) Delete(k []byte) error {
 	}
 
 	bt.free(bt.root)
-	if deleted.Type() == page.INTERNAL_PAGE && deleted.NCells() == 1 {
+	if deleted.Type() == utils.INTERN && deleted.NCells() == 1 {
 		bt.root, _ = deleted.GetInternalCell(0)
 	} else {
 		bt.root = bt.alloc(deleted)
@@ -84,33 +87,28 @@ func (bt *BTree) Delete(k []byte) error {
 	return nil
 }
 
-// Inserts the cell into the correct leaf by recursively walking down the B-Tree
-// and updating the internal cells pointers along the way. If a page exceeds the
-// page size limit it and the pointer to it stored in it's parent page will be
-// split. Existing keys will be updated.
-func (bt *BTree) bTreeInsert(p page.Page, c cell.Cell) (page.Page, error) {
-	i, exists := p.BinSearchKeyIdx(c.Key())
+func (bt *BTree) bTreeInsert(n node.Node, c cell.Cell) (node.Node, error) {
+	i, exists := n.BinSearchKeyIdx(c.Key())
 
 	var err error
-	inserted := page.Page{}
+	inserted := node.Node{}
 
-	switch p.Type() {
-
-	case page.LEAF_PAGE:
+	switch n.Type() {
+	case utils.LEAF:
 		if !exists {
-			inserted, err = p.InsertCell(i, c)
+			inserted, err = n.InsertCell(i, c)
 			if err != nil {
 				return nil, err
 			}
 		} else {
-			inserted, err = p.UpdateCell(i, c)
+			inserted, err = n.UpdateCell(i, c)
 			if err != nil {
 				return nil, err
 			}
 		}
 
-	case page.INTERNAL_PAGE:
-		ptrCell, _ := p.GetCell(i)
+	case utils.INTERN:
+		ptrCell, _ := n.GetCell(i)
 		childPtr, _ := ptrCell.GetChildPtr()
 		child := bt.get(childPtr)
 
@@ -120,13 +118,13 @@ func (bt *BTree) bTreeInsert(p page.Page, c cell.Cell) (page.Page, error) {
 		}
 
 		if inserted.Size() > PAGE_SIZE {
-			inserted, err = bt.splitChildPtr(i, p, inserted)
+			inserted, err = bt.splitChildPtr(i, n, inserted)
 			if err != nil {
 				return nil, err
 			}
 		} else {
 			insertedPtr := bt.alloc(inserted)
-			inserted, err = p.UpdateInternalCell(i, insertedPtr)
+			inserted, err = n.UpdateInternalCell(i, insertedPtr)
 			if err != nil {
 				return nil, err
 			}
@@ -134,29 +132,29 @@ func (bt *BTree) bTreeInsert(p page.Page, c cell.Cell) (page.Page, error) {
 		bt.free(childPtr)
 
 	default:
-		return nil, fmt.Errorf("btree: page header malformed")
+		return nil, errors.New("btree: page header malformed")
 
 	}
 
 	return inserted, nil
 }
 
-func (bt *BTree) bTreeDelete(p page.Page, k []byte) (page.Page, error) {
-	i, exists := p.BinSearchKeyIdx(k)
+func (bt *BTree) bTreeDelete(n node.Node, k []byte) (node.Node, error) {
+	i, exists := n.BinSearchKeyIdx(k)
 
 	var err error
-	deleted := page.Page{}
+	var deleted node.Node
 
-	switch p.Type() {
-	case page.LEAF_PAGE:
+	switch n.Type() {
+	case utils.LEAF:
 		if !exists {
-			return nil, fmt.Errorf("btree: cannot delete non existing key")
+			return nil, errors.New("btree: cannot delete non existing key")
 		}
 
-		deleted, err = p.DeleteCell(i)
+		deleted, err = n.DeleteCell(i)
 
-	case page.INTERNAL_PAGE:
-		ptrCell, _ := p.GetCell(i)
+	case utils.INTERN:
+		ptrCell, _ := n.GetCell(i)
 		childPtr, _ := ptrCell.GetChildPtr()
 		child := bt.get(childPtr)
 
@@ -166,13 +164,13 @@ func (bt *BTree) bTreeDelete(p page.Page, k []byte) (page.Page, error) {
 		}
 
 		if deleted.Size() > PAGE_SIZE/4 {
-			deleted, err = bt.mergeChildPtr(i, p, deleted)
+			deleted, err = bt.mergeChildPtr(i, n, deleted)
 			if err != nil {
 				return nil, err
 			}
 		} else {
 			deletedPtr := bt.alloc(deleted)
-			deleted, err = p.UpdateInternalCell(i, deletedPtr)
+			deleted, err = n.UpdateInternalCell(i, deletedPtr)
 			if err != nil {
 				return nil, err
 			}
@@ -180,16 +178,13 @@ func (bt *BTree) bTreeDelete(p page.Page, k []byte) (page.Page, error) {
 		bt.free(childPtr)
 
 	default:
-		return nil, fmt.Errorf("btree: page header malformed")
+		return nil, errors.New("btree: page header malformed")
 	}
 
 	return deleted, nil
 }
 
-// Splits the child page and the pointer to it stored in the parent page into
-// two and returns a new parent page with the two pointers pointing to each of
-// the halfs.
-func (bt *BTree) splitChildPtr(i uint16, parent, child page.Page) (page.Page, error) {
+func (bt *BTree) splitChildPtr(i uint16, parent, child node.Node) (node.Node, error) {
 	l, r := child.Split()
 	lPtr := bt.alloc(l)
 	rPtr := bt.alloc(r)
@@ -216,12 +211,10 @@ func (bt *BTree) splitChildPtr(i uint16, parent, child page.Page) (page.Page, er
 	return split, nil
 }
 
-// Merges the child page, if possible, to it's neighbors and returns the new
-// parent page with the pointers replaced by the new one to the merged page.
-func (bt *BTree) mergeChildPtr(i uint16, parent, child page.Page) (page.Page, error) {
+func (bt *BTree) mergeChildPtr(i uint16, parent, child node.Node) (node.Node, error) {
 	var err error
 	var siblingPtr uint64
-	var sibling page.Page
+	var sibling node.Node
 	var merged bool = false
 
 	if i < parent.NCells()-1 {
