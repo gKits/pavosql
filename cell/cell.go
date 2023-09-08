@@ -3,9 +3,8 @@ package cell
 import (
 	"encoding/binary"
 	"errors"
-	"fmt"
 
-	"github.com/gKits/PavoSQL/btree/utils"
+	"github.com/gKits/PavoSQL/utils"
 )
 
 type Cell []byte

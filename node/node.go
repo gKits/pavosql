@@ -6,8 +6,8 @@ import (
 	"errors"
 	"slices"
 
-	"github.com/gKits/PavoSQL/btree/cell"
-	"github.com/gKits/PavoSQL/btree/utils"
+	"github.com/gKits/PavoSQL/cell"
+	"github.com/gKits/PavoSQL/utils"
 )
 
 const (
