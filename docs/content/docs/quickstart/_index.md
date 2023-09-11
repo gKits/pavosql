@@ -1,6 +1,6 @@
 +++
 Title = "Getting started"
 Weight = 1
-bookFlatSection = true
+bookCollapseSection = true
 draft = true
 +++
