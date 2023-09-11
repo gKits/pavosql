@@ -3,9 +3,7 @@ package btree
 import (
 	"errors"
 
-	"github.com/gKits/PavoSQL/btree/cell"
-	"github.com/gKits/PavoSQL/btree/node"
-	"github.com/gKits/PavoSQL/btree/utils"
+	"github.com/gKits/PavoSQL/internal/node"
 )
 
 const (
@@ -13,7 +11,7 @@ const (
 )
 
 type BTree struct {
-	root  uint64
+	Root  uint64
 	get   func(uint64) node.Node
 	alloc func(node.Node) uint64
 	free  func(uint64)
@@ -28,111 +26,129 @@ func NewBTree(
 	return BTree{root, get, alloc, free}
 }
 
-// Inserts the cell c into the BTree.
-func (bt *BTree) Insert(c cell.Cell) error {
-	if bt.root == 0 {
-		root, _ := node.NewNode(utils.LEAF, c)
-		bt.root = bt.alloc(root)
+func (bt *BTree) SetCallbacks(
+	get func(uint64) node.Node, alloc func(node.Node) uint64, free func(uint64),
+) {
+	bt.get = get
+	bt.alloc = alloc
+	bt.free = free
+}
+
+func (bt *BTree) Insert(k, v []byte) error {
+	if bt.Root == 0 {
+		root := &node.LeafNode{}
+		root, err := root.Insert(0, k, v)
+		if err != nil {
+			return err
+		}
+
+		bt.Root = bt.alloc(root)
 		return nil
 	}
 
-	root := bt.get(bt.root)
+	root := bt.get(bt.Root)
 
-	inserted, err := bt.bTreeInsert(root, c)
+	inserted, err := bt.bTreeInsert(root, k, v)
 	if err != nil {
 		return err
 	}
 
 	if inserted.Size() > PAGE_SIZE {
 		insertedPtr := bt.alloc(inserted)
-		c, err := inserted.GetCell(0)
+		k, err := inserted.Key(0)
 		if err != nil {
 			return err
 		}
-		c, _ = cell.NewCell(utils.INTERN, c.Key(), insertedPtr)
 
-		root, _ = node.NewNode(utils.INTERN, c)
+		t := node.PointerNode{}
+		t.Insert(0, k, insertedPtr)
 
-		inserted, err = bt.splitChildPtr(0, root, inserted)
+		inserted, err = bt.splitChildPtr(0, t, inserted)
 		if err != nil {
 			return err
 		}
-		bt.root = bt.alloc(inserted)
+		bt.Root = bt.alloc(inserted)
 	} else {
-		bt.root = bt.alloc(inserted)
+		bt.Root = bt.alloc(inserted)
 	}
 
 	return nil
 }
 
-// Deletes the cell the key k from the BTree.
 func (bt *BTree) Delete(k []byte) error {
-	if bt.root == 0 {
+	if bt.Root == 0 {
 		return errors.New("cannot delete from empty tree")
 	}
-	root := bt.get(bt.root)
+	root := bt.get(bt.Root)
 
-	deleted, err := bt.bTreeDelete(root, k)
+	root, err := bt.bTreeDelete(root, k)
 	if err != nil {
 		return err
 	}
 
-	bt.free(bt.root)
-	if deleted.Type() == utils.INTERN && deleted.NCells() == 1 {
-		bt.root, _ = deleted.GetInternalCell(0)
+	bt.free(bt.Root)
+
+	if root.Type() == node.PNTR_NODE && root.NKeys() == 1 {
+		pntrRoot := root.(*node.PointerNode)
+		bt.Root, _ = pntrRoot.Ptr(0)
 	} else {
-		bt.root = bt.alloc(deleted)
+		bt.Root = bt.alloc(root)
 	}
 
 	return nil
 }
 
-func (bt *BTree) bTreeInsert(n node.Node, c cell.Cell) (node.Node, error) {
-	i, exists := n.BinSearchKeyIdx(c.Key())
+func (bt *BTree) bTreeInsert(n node.Node, k, v []byte) (node.Node, error) {
+	i, exists := n.Search(k)
 
 	var err error
-	inserted := node.Node{}
+	var inserted node.Node
 
 	switch n.Type() {
-	case utils.LEAF:
+	case node.LEAF_NODE:
+		leafN := n.(*node.LeafNode)
+
 		if !exists {
-			inserted, err = n.InsertCell(i, c)
+			inserted, err = leafN.Insert(i, k, v)
 			if err != nil {
 				return nil, err
 			}
 		} else {
-			inserted, err = n.UpdateCell(i, c)
+			inserted, err = leafN.Update(i, k, v)
 			if err != nil {
 				return nil, err
 			}
 		}
 
-	case utils.INTERN:
-		ptrCell, _ := n.GetCell(i)
-		childPtr, _ := ptrCell.GetChildPtr()
-		child := bt.get(childPtr)
+	case node.PNTR_NODE:
+		pntrN := n.(*node.PointerNode)
 
-		inserted, err = bt.bTreeInsert(child, c)
+		ptr, _ := pntrN.Ptr(i)
+		child := bt.get(ptr)
+
+		inserted, err = bt.bTreeInsert(child, k, v)
 		if err != nil {
 			return nil, err
 		}
 
 		if inserted.Size() > PAGE_SIZE {
-			inserted, err = bt.splitChildPtr(i, n, inserted)
+			inserted, err = bt.splitChildPtr(i, *pntrN, inserted)
 			if err != nil {
 				return nil, err
 			}
 		} else {
 			insertedPtr := bt.alloc(inserted)
-			inserted, err = n.UpdateInternalCell(i, insertedPtr)
+			ptrKey, _ := pntrN.Key(i)
+			inserted, err = pntrN.Update(i, ptrKey, insertedPtr)
 			if err != nil {
 				return nil, err
 			}
 		}
-		bt.free(childPtr)
+
+		bt.free(ptr)
 
 	default:
-		return nil, errors.New("btree: page header malformed")
+		return nil, errBTreeHeader
 
 	}
 
@@ -140,23 +156,26 @@ func (bt *BTree) bTreeInsert(n node.Node, c cell.Cell) (node.Node, error) {
 }
 
 func (bt *BTree) bTreeDelete(n node.Node, k []byte) (node.Node, error) {
-	i, exists := n.BinSearchKeyIdx(k)
+	i, exists := n.Search(k)
 
 	var err error
 	var deleted node.Node
 
 	switch n.Type() {
-	case utils.LEAF:
+	case node.LEAF_NODE:
 		if !exists {
 			return nil, errors.New("btree: cannot delete non existing key")
 		}
 
-		deleted, err = n.DeleteCell(i)
+		leafN := n.(*node.LeafNode)
 
-	case utils.INTERN:
-		ptrCell, _ := n.GetCell(i)
-		childPtr, _ := ptrCell.GetChildPtr()
-		child := bt.get(childPtr)
+		deleted, err = leafN.Delete(i)
+
+	case node.PNTR_NODE:
+		n := n.(*node.PointerNode)
+
+		ptr, _ := n.Ptr(i)
+		child := bt.get(ptr)
 
 		deleted, err = bt.bTreeDelete(child, k)
 		if err != nil {
@@ -170,40 +189,43 @@ func (bt *BTree) bTreeDelete(n node.Node, k []byte) (node.Node, error) {
 			}
 		} else {
 			deletedPtr := bt.alloc(deleted)
-			deleted, err = n.UpdateInternalCell(i, deletedPtr)
+
+			k, _ := deleted.Key(i)
+			deleted, err = n.Update(i, k, deletedPtr)
 			if err != nil {
 				return nil, err
 			}
 		}
-		bt.free(childPtr)
+		bt.free(ptr)
 
 	default:
-		return nil, errors.New("btree: page header malformed")
+		return nil, errBTreeHeader
 	}
 
 	return deleted, nil
 }
 
-func (bt *BTree) splitChildPtr(i uint16, parent, child node.Node) (node.Node, error) {
+func (bt *BTree) splitChildPtr(i int, parent node.PointerNode, child node.Node) (node.Node, error) {
 	l, r := child.Split()
 	lPtr := bt.alloc(l)
 	rPtr := bt.alloc(r)
 
-	split, err := parent.UpdateInternalCell(i, lPtr)
+	lKey, err := parent.Key(i)
 	if err != nil {
 		return nil, err
 	}
 
-	rCell, err := r.GetCell(0)
-	if err != nil {
-		return nil, err
-	}
-	rCell, err = rCell.SetChildPtr(rPtr)
+	split, err := parent.Update(i, lKey, lPtr)
 	if err != nil {
 		return nil, err
 	}
 
-	split, err = parent.InsertCell(i, rCell)
+	rKey, err := r.Key(0)
+	if err != nil {
+		return nil, err
+	}
+
+	split, err = parent.Insert(i+1, rKey, rPtr)
 	if err != nil {
 		return nil, err
 	}
@@ -211,18 +233,20 @@ func (bt *BTree) splitChildPtr(i uint16, parent, child node.Node) (node.Node, er
 	return split, nil
 }
 
-func (bt *BTree) mergeChildPtr(i uint16, parent, child node.Node) (node.Node, error) {
+func (bt *BTree) mergeChildPtr(i int, parent *node.PointerNode, child node.Node) (node.Node, error) {
 	var err error
 	var siblingPtr uint64
 	var sibling node.Node
 	var merged bool = false
 
-	if i < parent.NCells()-1 {
-		siblingPtr, err = parent.GetInternalCell(i + 1)
+	if i < parent.NKeys()-1 {
+		siblingPtr, err = parent.Ptr(i + 1)
 		if err != nil {
 			return nil, err
 		}
+
 		sibling = bt.get(siblingPtr)
+
 		if sibling.Size()+child.Size() < PAGE_SIZE {
 			child, err = child.Merge(sibling)
 			if err != nil {
@@ -234,7 +258,8 @@ func (bt *BTree) mergeChildPtr(i uint16, parent, child node.Node) (node.Node, er
 	}
 
 	if i != 0 {
-		siblingPtr, err = parent.GetInternalCell(i - 1)
+		i--
+		siblingPtr, err = parent.Ptr(i)
 		if err != nil {
 			return nil, err
 		}
@@ -251,7 +276,8 @@ func (bt *BTree) mergeChildPtr(i uint16, parent, child node.Node) (node.Node, er
 
 	if merged {
 		ptr := bt.alloc(child)
-		parent, err = parent.UpdateInternalCell(i, ptr)
+		k, _ := parent.Key(i)
+		parent, err = parent.Update(i, k, ptr)
 		if err != nil {
 			return nil, err
 		}
