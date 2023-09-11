@@ -8,10 +8,6 @@
 *.so
 *.dylib
 
-# pavod and pavosql binaries
-pavod
-pavosql
-
 # Test binary, built with `go test -c`
 *.test
 
@@ -28,3 +24,5 @@ go.work
 docs/.hugo_build.lock
 public
 docs/public
+
+dist/
