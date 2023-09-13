@@ -9,7 +9,6 @@ import (
 type LeafNode struct {
 	keys [][]byte
 	vals [][]byte
-	size int
 }
 
 func NewLeafNode() LeafNode {
@@ -47,8 +46,6 @@ func (ln *LeafNode) Decode(d []byte) error {
 		return errNodeDecode
 	}
 
-	ln.size = len(d)
-
 	nKeys := binary.BigEndian.Uint16(d[2:4])
 	ln.keys = make([][]byte, nKeys)
 	ln.vals = make([][]byte, nKeys)
@@ -68,7 +65,12 @@ func (ln *LeafNode) Decode(d []byte) error {
 }
 
 func (ln *LeafNode) Size() int {
-	return ln.size
+	size := 4
+	for i, k := range ln.keys {
+		v := ln.vals[i]
+		size += 4 + len(k) + len(v)
+	}
+	return size
 }
 
 func (ln *LeafNode) Key(i int) ([]byte, error) {
@@ -83,21 +85,20 @@ func (ln *LeafNode) Search(k []byte) (int, bool) {
 	r := len(ln.keys)
 
 	var i int
-	var cmp int
 
 	for i = r / 2; l < r; i = (l + r) / 2 {
-		cmp = bytes.Compare(k, ln.keys[i])
+		cmp := bytes.Compare(k, ln.keys[i])
 		if cmp < 0 {
-			r = i - 1
+			r = i
 		} else if cmp > 0 {
-			l = i + 1
+			l = i
 		} else {
 			return i, true
 		}
-	}
 
-	if cmp > 1 {
-		i++
+		if r-l == 1 {
+			return i, false
+		}
 	}
 
 	return i, false
@@ -115,7 +116,6 @@ func (ln LeafNode) Merge(toMerge Node) (Node, error) {
 
 	ln.keys = append(ln.keys, right.keys...)
 	ln.vals = append(ln.vals, right.vals...)
-	ln.size += right.size
 
 	return &ln, nil
 }
@@ -123,11 +123,12 @@ func (ln LeafNode) Merge(toMerge Node) (Node, error) {
 func (ln LeafNode) Split() (Node, Node) {
 	var half int
 	var size int = 0
+	lnSize := ln.Size()
 
 	for i, k := range ln.keys {
 		v := ln.vals[i]
 		size += 4 + len(k) + len(v)
-		if size > ln.size/2 {
+		if size > lnSize/2 {
 			half = i
 			size -= 4 - len(k) - len(v)
 			break
@@ -137,12 +138,10 @@ func (ln LeafNode) Split() (Node, Node) {
 	split := LeafNode{
 		keys: ln.keys[half:],
 		vals: ln.vals[half:],
-		size: ln.size - size,
 	}
 
 	ln.keys = ln.keys[:half]
 	ln.vals = ln.vals[:half]
-	ln.size = size
 
 	return &ln, &split
 }
@@ -170,7 +169,6 @@ func (ln LeafNode) Insert(i int, k, v []byte) (*LeafNode, error) {
 
 	ln.keys = slices.Insert(ln.keys, i, k)
 	ln.vals = slices.Insert(ln.vals, i, k)
-	ln.size += len(k) + len(v) + 4
 
 	return &ln, nil
 }
@@ -182,9 +180,7 @@ func (ln LeafNode) Update(i int, k, v []byte) (*LeafNode, error) {
 		return nil, errNodeUpdate
 	}
 
-	og := ln.vals[i]
 	ln.vals[i] = v
-	ln.size += len(v) - len(og)
 
 	return &ln, nil
 }
@@ -194,12 +190,8 @@ func (ln LeafNode) Delete(i int) (*LeafNode, error) {
 		return nil, errNodeIdx
 	}
 
-	k := ln.keys[i]
-	v := ln.vals[i]
-
 	ln.keys = slices.Delete(ln.keys, i, i)
 	ln.vals = slices.Delete(ln.vals, i, i)
-	ln.size -= len(k) - len(v) - 4
 
 	return &ln, nil
 }
