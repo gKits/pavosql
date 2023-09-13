@@ -29,12 +29,12 @@ func (ln LeafNode) NKeys() int {
 func (ln *LeafNode) Encode() []byte {
 	var b []byte
 
-	binary.BigEndian.AppendUint16(b, uint16(LEAF_NODE))
-	binary.BigEndian.AppendUint16(b, uint16(len(ln.keys)))
+	b = binary.BigEndian.AppendUint16(b, uint16(LEAF_NODE))
+	b = binary.BigEndian.AppendUint16(b, uint16(len(ln.keys)))
 	for i, k := range ln.keys {
 		v := ln.vals[i]
-		binary.BigEndian.AppendUint16(b, uint16(len(k)))
-		binary.BigEndian.AppendUint16(b, uint16(len(v)))
+		b = binary.BigEndian.AppendUint16(b, uint16(len(k)))
+		b = binary.BigEndian.AppendUint16(b, uint16(len(v)))
 		b = append(b, k...)
 		b = append(b, v...)
 	}
