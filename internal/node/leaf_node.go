@@ -86,22 +86,21 @@ func (ln *LeafNode) Search(k []byte) (int, bool) {
 
 	var i int
 
-	for i = r / 2; l < r; i = (l + r) / 2 {
-		cmp := bytes.Compare(k, ln.keys[i])
-		if cmp < 0 {
+	for i = r / 2; r-l != 1; i = (l + r) / 2 {
+		if cmp := bytes.Compare(k, ln.keys[i]); cmp < 0 {
 			r = i
 		} else if cmp > 0 {
 			l = i
 		} else {
 			return i, true
 		}
-
-		if r-l == 1 {
-			return i, false
-		}
 	}
 
-	return i, false
+	shift := 1
+	if i == 0 {
+		shift = 0
+	}
+	return i + shift, false
 }
 
 func (ln LeafNode) Merge(toMerge Node) (Node, error) {
