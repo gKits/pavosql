@@ -31,7 +31,7 @@ func (fl *Freelist) Encode() []byte {
 
 func (fl *Freelist) Decode(d []byte) error {
 	if node.NodeType(binary.BigEndian.Uint16(d[0:2])) != node.FLST_NODE {
-		return errors.New("")
+		return errFLDecode
 	}
 
 	nPtrs := binary.BigEndian.Uint16(d[2:4])
