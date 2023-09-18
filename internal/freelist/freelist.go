@@ -2,7 +2,6 @@ package freelist
 
 import (
 	"encoding/binary"
-	"errors"
 
 	"github.com/gKits/PavoSQL/internal/node"
 )
