@@ -1,4 +1,4 @@
-package node
+package backend
 
 import (
 	"crypto/rand"

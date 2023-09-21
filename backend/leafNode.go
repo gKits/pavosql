@@ -1,4 +1,4 @@
-package node
+package backend
 
 import (
 	"bytes"
@@ -6,43 +6,13 @@ import (
 	"slices"
 )
 
-type LeafNode struct {
+type leafNode struct {
 	keys [][]byte
 	vals [][]byte
 }
 
-func NewLeafNode() LeafNode {
-	return LeafNode{}
-}
-
-// Node interface functions
-
-func (ln *LeafNode) Type() NodeType {
-	return LEAF_NODE
-}
-
-func (ln LeafNode) NKeys() int {
-	return len(ln.keys)
-}
-
-func (ln *LeafNode) Encode() []byte {
-	var b []byte
-
-	b = binary.BigEndian.AppendUint16(b, uint16(LEAF_NODE))
-	b = binary.BigEndian.AppendUint16(b, uint16(len(ln.keys)))
-	for i, k := range ln.keys {
-		v := ln.vals[i]
-		b = binary.BigEndian.AppendUint16(b, uint16(len(k)))
-		b = binary.BigEndian.AppendUint16(b, uint16(len(v)))
-		b = append(b, k...)
-		b = append(b, v...)
-	}
-
-	return b
-}
-
-func (ln *LeafNode) Decode(d []byte) error {
-	if NodeType(binary.BigEndian.Uint16(d[0:2])) != LEAF_NODE {
+func (ln *leafNode) decode(d []byte) error {
+	if nodeType(binary.BigEndian.Uint16(d[0:2])) != LEAF_NODE {
 		return errNodeDecode
 	}
 
@@ -64,7 +34,33 @@ func (ln *LeafNode) Decode(d []byte) error {
 	return nil
 }
 
-func (ln *LeafNode) Size() int {
+// node interface methods
+
+func (ln leafNode) typ() nodeType {
+	return LEAF_NODE
+}
+
+func (ln leafNode) total() int {
+	return len(ln.keys)
+}
+
+func (ln leafNode) encode() []byte {
+	var b []byte
+
+	b = binary.BigEndian.AppendUint16(b, uint16(LEAF_NODE))
+	b = binary.BigEndian.AppendUint16(b, uint16(len(ln.keys)))
+	for i, k := range ln.keys {
+		v := ln.vals[i]
+		b = binary.BigEndian.AppendUint16(b, uint16(len(k)))
+		b = binary.BigEndian.AppendUint16(b, uint16(len(v)))
+		b = append(b, k...)
+		b = append(b, v...)
+	}
+
+	return b
+}
+
+func (ln leafNode) size() int {
 	size := 4
 	for i, k := range ln.keys {
 		v := ln.vals[i]
@@ -73,14 +69,14 @@ func (ln *LeafNode) Size() int {
 	return size
 }
 
-func (ln *LeafNode) Key(i int) ([]byte, error) {
+func (ln leafNode) key(i int) ([]byte, error) {
 	if i >= len(ln.keys) {
 		return nil, errNodeIdx
 	}
 	return ln.keys[i], nil
 }
 
-func (ln *LeafNode) Search(k []byte) (int, bool) {
+func (ln leafNode) search(k []byte) (int, bool) {
 	l := 0
 	r := len(ln.keys)
 
@@ -103,8 +99,8 @@ func (ln *LeafNode) Search(k []byte) (int, bool) {
 	return i + shift, false
 }
 
-func (ln LeafNode) Merge(toMerge Node) (Node, error) {
-	right, ok := toMerge.(*LeafNode)
+func (ln leafNode) merge(toMerge node) (node, error) {
+	right, ok := toMerge.(*leafNode)
 	if !ok {
 		return nil, errNodeMerge
 	}
@@ -119,10 +115,10 @@ func (ln LeafNode) Merge(toMerge Node) (Node, error) {
 	return &ln, nil
 }
 
-func (ln LeafNode) Split() (Node, Node) {
+func (ln leafNode) split() (node, node) {
 	var half int
 	var size int = 0
-	lnSize := ln.Size()
+	lnSize := ln.size()
 
 	for i, k := range ln.keys {
 		v := ln.vals[i]
@@ -134,7 +130,7 @@ func (ln LeafNode) Split() (Node, Node) {
 		}
 	}
 
-	split := LeafNode{
+	split := leafNode{
 		keys: ln.keys[half:],
 		vals: ln.vals[half:],
 	}
@@ -145,52 +141,52 @@ func (ln LeafNode) Split() (Node, Node) {
 	return &ln, &split
 }
 
-// LeafNode specific functions
+// leafNode specific methods
 
-func (ln *LeafNode) Val(i int) ([]byte, error) {
+func (ln *leafNode) val(i int) ([]byte, error) {
 	if i >= len(ln.vals) {
 		return nil, errNodeIdx
 	}
 	return ln.vals[i], nil
 }
 
-func (ln *LeafNode) KeyVal(i int) ([]byte, []byte, error) {
+func (ln *leafNode) keyVal(i int) ([]byte, []byte, error) {
 	if i >= len(ln.keys) || i >= len(ln.vals) {
 		return nil, nil, errNodeIdx
 	}
 	return ln.keys[i], ln.vals[i], nil
 }
 
-func (ln LeafNode) Insert(i int, k, v []byte) (*LeafNode, error) {
+func (ln leafNode) insert(i int, k, v []byte) (leafNode, error) {
 	if i > len(ln.keys) || i > len(ln.vals) {
-		return nil, errNodeIdx
+		return leafNode{}, errNodeIdx
 	}
 
 	ln.keys = slices.Insert(ln.keys, i, k)
 	ln.vals = slices.Insert(ln.vals, i, k)
 
-	return &ln, nil
+	return ln, nil
 }
 
-func (ln LeafNode) Update(i int, k, v []byte) (*LeafNode, error) {
+func (ln leafNode) update(i int, k, v []byte) (leafNode, error) {
 	if i > len(ln.keys) || i > len(ln.vals) {
-		return nil, errNodeIdx
+		return leafNode{}, errNodeIdx
 	} else if slices.Equal(k, ln.keys[i]) {
-		return nil, errNodeUpdate
+		return leafNode{}, errNodeUpdate
 	}
 
 	ln.vals[i] = v
 
-	return &ln, nil
+	return ln, nil
 }
 
-func (ln LeafNode) Delete(i int) (*LeafNode, error) {
+func (ln leafNode) delete(i int) (leafNode, error) {
 	if i > len(ln.keys) || i > len(ln.vals) {
-		return nil, errNodeIdx
+		return leafNode{}, errNodeIdx
 	}
 
 	ln.keys = slices.Delete(ln.keys, i, i)
 	ln.vals = slices.Delete(ln.vals, i, i)
 
-	return &ln, nil
+	return ln, nil
 }
