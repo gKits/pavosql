@@ -11,7 +11,7 @@ type freelistNode struct {
 }
 
 func (fn *freelistNode) decode(d []byte) error {
-	if nodeType(binary.BigEndian.Uint16(d[0:2])) != FLST_NODE {
+	if nodeType(binary.BigEndian.Uint16(d[0:2])) != flNode {
 		return errNodeDecode
 	}
 
@@ -27,13 +27,13 @@ func (fn *freelistNode) decode(d []byte) error {
 // node interface methods
 
 func (fn freelistNode) typ() nodeType {
-	return FLST_NODE
+	return flNode
 }
 
 func (fn freelistNode) encode() []byte {
 	var b []byte
 
-	binary.BigEndian.AppendUint16(b, uint16(FLST_NODE))
+	binary.BigEndian.AppendUint16(b, uint16(flNode))
 	binary.BigEndian.AppendUint16(b, uint16(len(fn.ptrs)))
 	binary.BigEndian.AppendUint64(b, fn.next)
 	for _, ptr := range fn.ptrs {

@@ -12,7 +12,7 @@ type pointerNode struct {
 }
 
 func (pn *pointerNode) decode(d []byte) error {
-	if nodeType(binary.BigEndian.Uint16(d[0:2])) != PNTR_NODE {
+	if nodeType(binary.BigEndian.Uint16(d[0:2])) != ptrNode {
 		return errNodeDecode
 	}
 
@@ -34,7 +34,7 @@ func (pn *pointerNode) decode(d []byte) error {
 // node interface methods
 
 func (pn pointerNode) typ() nodeType {
-	return PNTR_NODE
+	return ptrNode
 }
 
 func (pn pointerNode) total() int {
@@ -44,7 +44,7 @@ func (pn pointerNode) total() int {
 func (pn pointerNode) encode() []byte {
 	var b []byte
 
-	binary.BigEndian.AppendUint16(b, uint16(PNTR_NODE))
+	binary.BigEndian.AppendUint16(b, uint16(ptrNode))
 	binary.BigEndian.AppendUint16(b, uint16(len(pn.keys)))
 	for i, k := range pn.keys {
 		ptr := pn.ptrs[i]

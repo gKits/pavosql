@@ -8,9 +8,9 @@ import (
 type nodeType uint16
 
 const (
-	PNTR_NODE nodeType = iota
-	LEAF_NODE
-	FLST_NODE
+	ptrNode nodeType = iota
+	lfNode
+	flNode
 )
 
 var (
@@ -38,17 +38,17 @@ func decodeNode(d []byte) (node, error) {
 	typ := nodeType(binary.BigEndian.Uint16(d[0:2]))
 
 	switch typ {
-	case PNTR_NODE:
+	case ptrNode:
 		n := pointerNode{}
 		n.decode(d)
 		return &n, nil
 
-	case LEAF_NODE:
+	case lfNode:
 		n := leafNode{}
 		n.decode(d)
 		return &n, nil
 
-	case FLST_NODE:
+	case flNode:
 		n := freelistNode{}
 		n.decode(d)
 		return &n, nil

@@ -12,7 +12,7 @@ type leafNode struct {
 }
 
 func (ln *leafNode) decode(d []byte) error {
-	if nodeType(binary.BigEndian.Uint16(d[0:2])) != LEAF_NODE {
+	if nodeType(binary.BigEndian.Uint16(d[0:2])) != lfNode {
 		return errNodeDecode
 	}
 
@@ -37,7 +37,7 @@ func (ln *leafNode) decode(d []byte) error {
 // node interface methods
 
 func (ln leafNode) typ() nodeType {
-	return LEAF_NODE
+	return lfNode
 }
 
 func (ln leafNode) total() int {
@@ -47,7 +47,7 @@ func (ln leafNode) total() int {
 func (ln leafNode) encode() []byte {
 	var b []byte
 
-	b = binary.BigEndian.AppendUint16(b, uint16(LEAF_NODE))
+	b = binary.BigEndian.AppendUint16(b, uint16(lfNode))
 	b = binary.BigEndian.AppendUint16(b, uint16(len(ln.keys)))
 	for i, k := range ln.keys {
 		v := ln.vals[i]

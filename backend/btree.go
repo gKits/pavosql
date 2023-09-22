@@ -4,7 +4,7 @@ import (
 	"errors"
 )
 
-const PAGE_SIZE = 4096
+const pageSize = 4096
 
 type getFunc func(uint64) (node, error)
 type pullFunc func(uint64) (node, error)
@@ -67,7 +67,7 @@ func (bt *bTree) Insert(k, v []byte) error {
 		return err
 	}
 
-	if inserted.size() > PAGE_SIZE {
+	if inserted.size() > pageSize {
 		insertedPtr, err := bt.alloc(inserted)
 		if err != nil {
 			return err
@@ -107,7 +107,7 @@ func (bt *bTree) Delete(k []byte) error {
 		return err
 	}
 
-	if root.typ() == PNTR_NODE && root.total() == 1 {
+	if root.typ() == ptrNode && root.total() == 1 {
 		pntrRoot := root.(pointerNode)
 		bt.root, _ = pntrRoot.ptr(0)
 	} else {
@@ -124,7 +124,7 @@ func (bt *bTree) bTreeGet(n node, k []byte) (node, []byte, error) {
 	i, exists := n.search(k)
 
 	switch n.typ() {
-	case LEAF_NODE:
+	case lfNode:
 		leafN := n.(leafNode)
 
 		if !exists {
@@ -137,7 +137,7 @@ func (bt *bTree) bTreeGet(n node, k []byte) (node, []byte, error) {
 		}
 		return n, v, nil
 
-	case PNTR_NODE:
+	case ptrNode:
 		pntrN := n.(pointerNode)
 
 		ptr, _ := pntrN.ptr(i)
@@ -159,7 +159,7 @@ func (bt *bTree) bTreeInsert(n node, k, v []byte) (node, error) {
 	var inserted node
 
 	switch n.typ() {
-	case LEAF_NODE:
+	case lfNode:
 		leafN := n.(leafNode)
 
 		if !exists {
@@ -174,7 +174,7 @@ func (bt *bTree) bTreeInsert(n node, k, v []byte) (node, error) {
 			}
 		}
 
-	case PNTR_NODE:
+	case ptrNode:
 		pntrN := n.(pointerNode)
 
 		ptr, _ := pntrN.ptr(i)
@@ -188,7 +188,7 @@ func (bt *bTree) bTreeInsert(n node, k, v []byte) (node, error) {
 			return nil, err
 		}
 
-		if inserted.size() > PAGE_SIZE {
+		if inserted.size() > pageSize {
 			inserted, err = bt.splitChildPtr(i, pntrN, inserted)
 			if err != nil {
 				return nil, err
@@ -222,7 +222,7 @@ func (bt *bTree) bTreeDelete(n node, k []byte) (node, error) {
 	var deleted node
 
 	switch n.typ() {
-	case LEAF_NODE:
+	case lfNode:
 		if !exists {
 			return nil, errBTreeDeleteKey
 		}
@@ -233,7 +233,7 @@ func (bt *bTree) bTreeDelete(n node, k []byte) (node, error) {
 			return nil, err
 		}
 
-	case PNTR_NODE:
+	case ptrNode:
 		n := n.(pointerNode)
 
 		ptr, _ := n.ptr(i)
@@ -247,7 +247,7 @@ func (bt *bTree) bTreeDelete(n node, k []byte) (node, error) {
 			return nil, err
 		}
 
-		if deleted.size() > PAGE_SIZE/4 {
+		if deleted.size() > pageSize/4 {
 			deleted, err = bt.mergeChildPtr(i, n, deleted)
 			if err != nil {
 				return nil, err
@@ -325,7 +325,7 @@ func (bt *bTree) mergeChildPtr(i int, parent pointerNode, child node) (node, err
 			return nil, err
 		}
 
-		if sibling.size()+child.size() < PAGE_SIZE {
+		if sibling.size()+child.size() < pageSize {
 			child, err = child.merge(sibling)
 			if err != nil {
 				return nil, err
@@ -347,7 +347,7 @@ func (bt *bTree) mergeChildPtr(i int, parent pointerNode, child node) (node, err
 			return nil, err
 		}
 
-		if sibling.size()+child.size() < PAGE_SIZE {
+		if sibling.size()+child.size() < pageSize {
 			child, err = sibling.merge(child)
 			if err != nil {
 				return nil, err

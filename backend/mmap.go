@@ -22,7 +22,7 @@ func (mm *mmap) init(f *os.File) error {
 		return err
 	}
 
-	if fStats.Size()%PAGE_SIZE != 0 {
+	if fStats.Size()%pageSize != 0 {
 		return errMmapFileSize
 	}
 
@@ -47,7 +47,7 @@ func (mm *mmap) init(f *os.File) error {
 }
 
 func (mm *mmap) extend(f *os.File, n int) error {
-	if mm.mmapSize >= n*PAGE_SIZE {
+	if mm.mmapSize >= n*pageSize {
 		return nil
 	}
 

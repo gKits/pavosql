@@ -101,7 +101,7 @@ func (fl *freelist) freelistPop(fn freelistNode) (freelistNode, uint64, error) {
 func (fl *freelist) freelistPush(fn freelistNode, val uint64) (freelistNode, error) {
 	if fn.next == 0 {
 		// create sub node when added pointer would exceed page size
-		if fn.size()+8 >= PAGE_SIZE {
+		if fn.size()+8 >= pageSize {
 			sub := freelistNode{0, []uint64{val}}
 
 			ptr, err := fl.alloc(sub)

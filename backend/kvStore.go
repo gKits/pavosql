@@ -26,7 +26,7 @@ type KVStore struct {
 		nappend int
 		updates map[uint64][]byte
 	}
-	temp map[uint64][PAGE_SIZE]byte
+	temp map[uint64][pageSize]byte
 	Sig  [16]byte
 }
 
@@ -146,7 +146,7 @@ func (kv *KVStore) loadMaster() error {
 	flRoot := binary.BigEndian.Uint64(b[24:32])
 	nPages := binary.BigEndian.Uint64(b[32:40])
 
-	if 1 > nPages || nPages > (uint64(kv.mmap.fileSize/PAGE_SIZE)) || 0 > btRoot || btRoot >= nPages {
+	if 1 > nPages || nPages > (uint64(kv.mmap.fileSize/pageSize)) || 0 > btRoot || btRoot >= nPages {
 		return errKVBadMaster
 	}
 
@@ -171,7 +171,7 @@ func (kv *KVStore) writeMaster() error {
 }
 
 func (kv *KVStore) extendFile(n int) error {
-	filePages := kv.mmap.fileSize / PAGE_SIZE
+	filePages := kv.mmap.fileSize / pageSize
 	if filePages >= n {
 		return nil
 	}
@@ -184,7 +184,7 @@ func (kv *KVStore) extendFile(n int) error {
 		filePages += inc
 	}
 
-	fileSize := filePages * PAGE_SIZE
+	fileSize := filePages * pageSize
 	if err := syscall.Fallocate(int(kv.f.Fd()), 0, 0, int64(fileSize)); err != nil {
 		return err
 	}
@@ -198,10 +198,10 @@ func (kv *KVStore) getPage(ptr uint64) (node, error) {
 	if !ok {
 		start := uint64(0)
 		for _, chunk := range kv.mmap.chunks {
-			end := start + uint64(len(chunk))/PAGE_SIZE
+			end := start + uint64(len(chunk))/pageSize
 			if ptr < end {
-				off := PAGE_SIZE * (ptr - start)
-				page = chunk[off : off+PAGE_SIZE]
+				off := pageSize * (ptr - start)
+				page = chunk[off : off+pageSize]
 				break
 			}
 			start = end
@@ -227,7 +227,7 @@ func (kv *KVStore) pullPage(ptr uint64) (node, error) {
 }
 
 func (kv *KVStore) allocPage(n node) (uint64, error) {
-	if n.size() > PAGE_SIZE {
+	if n.size() > pageSize {
 		return 0, errKVPageTooLarge
 	}
 
