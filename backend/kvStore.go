@@ -82,6 +82,24 @@ func (kv *KVStore) Close() {
 	kv.f.Close()
 }
 
+func (kv *KVStore) Get(k []byte) ([]byte, error) {
+	return kv.bt.Get(k)
+}
+
+func (kv *KVStore) Set(k, v []byte) error {
+	if err := kv.bt.Insert(k, v); err != nil {
+		return err
+	}
+	return kv.flush()
+}
+
+func (kv *KVStore) Del(k []byte) error {
+	if err := kv.bt.Delete(k); err != nil {
+		return err
+	}
+	return kv.flush()
+}
+
 func (kv *KVStore) flush() error {
 	if err := kv.writePages(); err != nil {
 		return err
