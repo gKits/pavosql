@@ -1,3 +1,5 @@
+//go:build !windows
+
 package backend
 
 import (
@@ -62,5 +64,14 @@ func (mm *mmap) extend(f *os.File, n int) error {
 	mm.mmapSize *= 2
 	mm.chunks = append(mm.chunks, chunk)
 
+	return nil
+}
+
+func (mm *mmap) close() error {
+	for _, chunk := range mm.chunks {
+		if err := syscall.Munmap(chunk); err != nil {
+			return err
+		}
+	}
 	return nil
 }

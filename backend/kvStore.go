@@ -74,10 +74,8 @@ err:
 }
 
 func (kv *KVStore) Close() {
-	for _, chunk := range kv.mmap.chunks {
-		if err := syscall.Munmap(chunk); err != nil {
-			panic(err)
-		}
+	if err := kv.mmap.close(); err != nil {
+		panic(err)
 	}
 	kv.f.Close()
 }
@@ -93,11 +91,12 @@ func (kv *KVStore) Set(k, v []byte) error {
 	return kv.flush()
 }
 
-func (kv *KVStore) Del(k []byte) error {
-	if err := kv.bt.Delete(k); err != nil {
-		return err
+func (kv *KVStore) Del(k []byte) (bool, error) {
+	del, err := kv.bt.Delete(k)
+	if err != nil {
+		return false, err
 	}
-	return kv.flush()
+	return del, kv.flush()
 }
 
 func (kv *KVStore) flush() error {

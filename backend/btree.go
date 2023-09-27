@@ -92,19 +92,24 @@ func (bt *bTree) Insert(k, v []byte) error {
 	return err
 }
 
-func (bt *bTree) Delete(k []byte) error {
+func (bt *bTree) Delete(k []byte) (bool, error) {
 	if bt.root == 0 {
-		return errBTreeDeleteEmpty
+		return false, errBTreeDeleteEmpty
 	}
 
 	root, err := bt.pull(bt.root)
 	if err != nil {
-		return err
+		return false, err
 	}
 
-	root, err = bt.bTreeDelete(root, k)
+	var deleted bool
+	root, deleted, err = bt.bTreeDelete(root, k)
 	if err != nil {
-		return err
+		return false, err
+	}
+
+	if !deleted {
+		return deleted, nil
 	}
 
 	if root.typ() == ptrNode && root.total() == 1 {
@@ -113,11 +118,11 @@ func (bt *bTree) Delete(k []byte) error {
 	} else {
 		bt.root, err = bt.alloc(root)
 		if err != nil {
-			return err
+			return false, err
 		}
 	}
 
-	return nil
+	return true, nil
 }
 
 func (bt *bTree) bTreeGet(n node, k []byte) (node, []byte, error) {
@@ -215,7 +220,7 @@ func (bt *bTree) bTreeInsert(n node, k, v []byte) (node, error) {
 	return inserted, nil
 }
 
-func (bt *bTree) bTreeDelete(n node, k []byte) (node, error) {
+func (bt *bTree) bTreeDelete(n node, k []byte) (node, bool, error) {
 	i, exists := n.search(k)
 
 	var err error
@@ -224,13 +229,13 @@ func (bt *bTree) bTreeDelete(n node, k []byte) (node, error) {
 	switch n.typ() {
 	case lfNode:
 		if !exists {
-			return nil, errBTreeDeleteKey
+			return nil, false, errBTreeDeleteKey
 		}
 
 		leafN := n.(leafNode)
 		deleted, err = leafN.delete(i)
 		if err != nil {
-			return nil, err
+			return nil, false, err
 		}
 
 	case ptrNode:
@@ -239,37 +244,37 @@ func (bt *bTree) bTreeDelete(n node, k []byte) (node, error) {
 		ptr, _ := n.ptr(i)
 		child, err := bt.pull(ptr)
 		if err != nil {
-			return nil, err
+			return nil, false, err
 		}
 
-		deleted, err = bt.bTreeDelete(child, k)
+		deleted, _, err = bt.bTreeDelete(child, k)
 		if err != nil {
-			return nil, err
+			return nil, false, err
 		}
 
 		if deleted.size() > pageSize/4 {
 			deleted, err = bt.mergeChildPtr(i, n, deleted)
 			if err != nil {
-				return nil, err
+				return nil, false, err
 			}
 		} else {
 			deletedPtr, err := bt.alloc(deleted)
 			if err != nil {
-				return nil, err
+				return nil, false, err
 			}
 
 			k, _ := deleted.key(i)
 			deleted, err = n.update(i, k, deletedPtr)
 			if err != nil {
-				return nil, err
+				return nil, false, err
 			}
 		}
 
 	default:
-		return nil, errBTreeHeader
+		return nil, false, errBTreeHeader
 	}
 
-	return deleted, nil
+	return deleted, true, nil
 }
 
 func (bt *bTree) splitChildPtr(i int, parent pointerNode, child node) (node, error) {
