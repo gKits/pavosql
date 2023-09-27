@@ -5,7 +5,6 @@ import (
 	"errors"
 	"os"
 	"slices"
-	"syscall"
 )
 
 var (
@@ -188,26 +187,7 @@ func (kv *KVStore) writeMaster() error {
 }
 
 func (kv *KVStore) extendFile(n int) error {
-	filePages := kv.mmap.fileSize / pageSize
-	if filePages >= n {
-		return nil
-	}
-
-	for filePages < n {
-		inc := filePages / 8
-		if inc < 1 {
-			inc = 1
-		}
-		filePages += inc
-	}
-
-	fileSize := filePages * pageSize
-	if err := syscall.Fallocate(int(kv.f.Fd()), 0, 0, int64(fileSize)); err != nil {
-		return err
-	}
-
-	kv.mmap.fileSize = fileSize
-	return nil
+	return kv.mmap.extendFile(kv.f, n)
 }
 
 func (kv *KVStore) getPage(ptr uint64) (node, error) {

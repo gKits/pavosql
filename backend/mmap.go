@@ -75,3 +75,26 @@ func (mm *mmap) close() error {
 	}
 	return nil
 }
+
+func extendFile(f *os.File, n int) error {
+	filePages := mm.fileSize / pageSize
+	if filePages >= n {
+		return nil
+	}
+
+	for filePages < n {
+		inc := filePages / 8
+		if inc < 1 {
+			inc = 1
+		}
+		filePages += inc
+	}
+
+	fileSize := filePages * pageSize
+	if err := syscall.Fallocate(int(kv.f.Fd()), 0, 0, int64(fileSize)); err != nil {
+		return err
+	}
+
+	mm.fileSize = fileSize
+	return nil
+}
