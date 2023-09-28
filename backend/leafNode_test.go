@@ -357,3 +357,77 @@ func TestLeafNodeMerge(t *testing.T) {
 		})
 	}
 }
+
+func TestLeafNodeSplit(t *testing.T) {
+	cases := []struct {
+		name  string
+		ln    *leafNode
+		left  *leafNode
+		right *leafNode
+	}{
+		{
+			name: "Split even number of same size",
+			ln: &leafNode{
+				keys: [][]byte{{'a'}, {'b'}, {'c'}, {'d'}, {'e'}, {'f'}},
+				vals: [][]byte{{'1'}, {'2'}, {'3'}, {'4'}, {'5'}, {'6'}},
+			},
+			left: &leafNode{
+				keys: [][]byte{{'a'}, {'b'}, {'c'}},
+				vals: [][]byte{{'1'}, {'2'}, {'3'}},
+			},
+			right: &leafNode{
+				keys: [][]byte{{'d'}, {'e'}, {'f'}},
+				vals: [][]byte{{'4'}, {'5'}, {'6'}},
+			},
+		},
+	}
+
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			resL, resR := c.ln.split()
+
+			left := resL.(*leafNode)
+			right := resR.(*leafNode)
+
+			if len(left.keys) != len(c.left.keys) {
+				t.Errorf("Expected %v keys, but got %v", len(c.left.keys), len(left.keys))
+
+				for i, exp := range c.left.keys {
+					if !bytes.Equal(left.keys[i], exp) {
+						t.Errorf("Expected key %v at index %v, but got %v", exp, i, left.keys[i])
+					}
+				}
+			}
+
+			if len(left.vals) != len(c.left.vals) {
+				t.Errorf("left %v vals, but got %v", len(c.left.vals), len(left.vals))
+
+				for i, exp := range c.left.vals {
+					if !bytes.Equal(left.vals[i], exp) {
+						t.Errorf("Expected val %v at index %v, but got %v", exp, i, left.vals[i])
+					}
+				}
+			}
+
+			if len(right.keys) != len(c.right.keys) {
+				t.Errorf("Expected %v keys, but got %v", len(c.right.keys), len(right.keys))
+
+				for i, exp := range c.right.keys {
+					if !bytes.Equal(right.keys[i], exp) {
+						t.Errorf("Expected key %v at index %v, but got %v", exp, i, right.keys[i])
+					}
+				}
+			}
+
+			if len(right.vals) != len(c.right.vals) {
+				t.Errorf("right %v vals, but got %v", len(c.right.vals), len(right.vals))
+
+				for i, exp := range c.right.vals {
+					if !bytes.Equal(right.vals[i], exp) {
+						t.Errorf("Expected val %v at index %v, but got %v", exp, i, right.vals[i])
+					}
+				}
+			}
+		})
+	}
+}
