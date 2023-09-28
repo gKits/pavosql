@@ -80,8 +80,9 @@ func TestLeafNodeDecode(t *testing.T) {
 func TestLeafNodeTyp(t *testing.T) {
 	ln := &leafNode{}
 
-	if ln.typ() != lfNode {
-		t.Errorf("Expected type %v, but got %v", lfNode, ln.typ())
+	typ := ln.Type()
+	if typ != lfNode {
+		t.Errorf("Expected type %v, but got %v", lfNode, typ)
 	}
 }
 
@@ -109,7 +110,7 @@ func TestLeafNodeEncode(t *testing.T) {
 
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			res := c.input.encode()
+			res := c.input.Encode()
 
 			if !bytes.Equal(res, c.expected) {
 				t.Errorf("Expected %v, but got %v", c.expected, res)
@@ -136,7 +137,7 @@ func TestLeafNodeSize(t *testing.T) {
 
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			res := c.input.size()
+			res := c.input.Size()
 
 			if res != c.expected {
 				t.Errorf("Expected node size %v, but got %v", c.expected, res)
@@ -185,7 +186,7 @@ func TestLeafNodeKey(t *testing.T) {
 
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			res, err := ln.key(c.input)
+			res, err := ln.Key(c.input)
 
 			if err != c.expectedErr {
 				t.Errorf("Expected error %v, but got %v", c.expectedErr, err)
@@ -330,7 +331,7 @@ func TestLeafNodeSearch(t *testing.T) {
 
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			res, exists := c.ln.search(c.input)
+			res, exists := c.ln.Search(c.input)
 
 			if exists != c.expectedExists {
 				t.Errorf("Expected the key existing %v, but got %v", c.expectedExists, exists)
@@ -384,7 +385,7 @@ func TestLeafNodeMerge(t *testing.T) {
 
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			res, err := c.left.merge(c.right)
+			res, err := c.left.Merge(c.right)
 
 			if c.expectedErr != err {
 				t.Errorf("Expected error %v, but got %v", c.expectedErr, err)
@@ -445,7 +446,7 @@ func TestLeafNodeSplit(t *testing.T) {
 
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			resL, resR := c.ln.split()
+			resL, resR := c.ln.Split()
 
 			left := resL.(*leafNode)
 			right := resR.(*leafNode)

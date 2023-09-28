@@ -18,13 +18,13 @@ type mmap struct {
 	chunks   [][]byte
 }
 
-func (mm *mmap) init(f *os.File) error {
+func (mm *mmap) Init(f *os.File) error {
 	fStats, err := f.Stat()
 	if err != nil {
 		return err
 	}
 
-	if fStats.Size()%pageSize != 0 {
+	if fStats.Size()%PageSize != 0 {
 		return errMmapFileSize
 	}
 
@@ -48,8 +48,8 @@ func (mm *mmap) init(f *os.File) error {
 	return nil
 }
 
-func (mm *mmap) extend(f *os.File, n int) error {
-	if mm.mmapSize >= n*pageSize {
+func (mm *mmap) Extend(f *os.File, n int) error {
+	if mm.mmapSize >= n*PageSize {
 		return nil
 	}
 
@@ -67,7 +67,7 @@ func (mm *mmap) extend(f *os.File, n int) error {
 	return nil
 }
 
-func (mm *mmap) close() error {
+func (mm *mmap) Close() error {
 	for _, chunk := range mm.chunks {
 		if err := syscall.Munmap(chunk); err != nil {
 			return err
@@ -76,8 +76,8 @@ func (mm *mmap) close() error {
 	return nil
 }
 
-func (mm *mmap) extendFile(f *os.File, n int) error {
-	filePages := mm.fileSize / pageSize
+func (mm *mmap) ExtendFile(f *os.File, n int) error {
+	filePages := mm.fileSize / PageSize
 	if filePages >= n {
 		return nil
 	}
@@ -90,7 +90,7 @@ func (mm *mmap) extendFile(f *os.File, n int) error {
 		filePages += inc
 	}
 
-	fileSize := filePages * pageSize
+	fileSize := filePages * PageSize
 	if err := syscall.Fallocate(int(f.Fd()), 0, 0, int64(fileSize)); err != nil {
 		return err
 	}

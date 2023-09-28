@@ -11,7 +11,7 @@ type pointerNode struct {
 	ptrs []uint64
 }
 
-func (pn *pointerNode) decode(d []byte) error {
+func (pn *pointerNode) Decode(d []byte) error {
 	if nodeType(binary.BigEndian.Uint16(d[0:2])) != ptrNode {
 		return errNodeDecode
 	}
@@ -33,15 +33,15 @@ func (pn *pointerNode) decode(d []byte) error {
 
 // node interface methods
 
-func (pn pointerNode) typ() nodeType {
+func (pn pointerNode) Type() nodeType {
 	return ptrNode
 }
 
-func (pn pointerNode) total() int {
+func (pn pointerNode) Total() int {
 	return len(pn.keys)
 }
 
-func (pn pointerNode) encode() []byte {
+func (pn pointerNode) Encode() []byte {
 	var b []byte
 
 	b = binary.BigEndian.AppendUint16(b, uint16(ptrNode))
@@ -55,7 +55,7 @@ func (pn pointerNode) encode() []byte {
 	return b
 }
 
-func (pn pointerNode) size() int {
+func (pn pointerNode) Size() int {
 	size := 4
 	for _, k := range pn.keys {
 		size += 2 + len(k) + 8
@@ -63,14 +63,14 @@ func (pn pointerNode) size() int {
 	return size
 }
 
-func (pn pointerNode) key(i int) ([]byte, error) {
+func (pn pointerNode) Key(i int) ([]byte, error) {
 	if i < 0 || i >= len(pn.keys) {
 		return nil, errNodeIdx
 	}
 	return pn.keys[i], nil
 }
 
-func (ln pointerNode) search(k []byte) (int, bool) {
+func (ln pointerNode) Search(k []byte) (int, bool) {
 	l := 0
 	r := len(ln.keys)
 
@@ -97,7 +97,7 @@ func (ln pointerNode) search(k []byte) (int, bool) {
 	return i, false
 }
 
-func (pn pointerNode) merge(toMerge node) (node, error) {
+func (pn pointerNode) Merge(toMerge node) (node, error) {
 	right, ok := toMerge.(*pointerNode)
 	if !ok {
 		return nil, errNodeMerge
@@ -113,7 +113,7 @@ func (pn pointerNode) merge(toMerge node) (node, error) {
 	return &pn, nil
 }
 
-func (pn pointerNode) split() (node, node) {
+func (pn pointerNode) Split() (node, node) {
 	var half int
 	var size int = 0
 	var pnSize = pn.size()
@@ -140,21 +140,21 @@ func (pn pointerNode) split() (node, node) {
 
 // pointerNode specific methods
 
-func (pn *pointerNode) ptr(i int) (uint64, error) {
+func (pn *pointerNode) Ptr(i int) (uint64, error) {
 	if i < 0 || i >= len(pn.ptrs) {
 		return 0, errNodeIdx
 	}
 	return pn.ptrs[i], nil
 }
 
-func (pn *pointerNode) keyPtr(i int) ([]byte, uint64, error) {
+func (pn *pointerNode) KeyPtr(i int) ([]byte, uint64, error) {
 	if i < 0 || i >= len(pn.keys) || i >= len(pn.ptrs) {
 		return nil, 0, errNodeIdx
 	}
 	return pn.keys[i], pn.ptrs[i], nil
 }
 
-func (pn pointerNode) insert(i int, k []byte, ptr uint64) (pointerNode, error) {
+func (pn pointerNode) Insert(i int, k []byte, ptr uint64) (pointerNode, error) {
 	if i < 0 || i > len(pn.keys) || i > len(pn.ptrs) {
 		return pointerNode{}, errNodeIdx
 	}
@@ -165,7 +165,7 @@ func (pn pointerNode) insert(i int, k []byte, ptr uint64) (pointerNode, error) {
 	return pn, nil
 }
 
-func (pn pointerNode) update(i int, k []byte, ptr uint64) (pointerNode, error) {
+func (pn pointerNode) Update(i int, k []byte, ptr uint64) (pointerNode, error) {
 	if i < 0 || i > len(pn.keys) || i > len(pn.ptrs) {
 		return pointerNode{}, errNodeIdx
 	} else if slices.Equal(k, pn.keys[i]) {
@@ -177,7 +177,7 @@ func (pn pointerNode) update(i int, k []byte, ptr uint64) (pointerNode, error) {
 	return pn, nil
 }
 
-func (pn pointerNode) delete(i int) (pointerNode, error) {
+func (pn pointerNode) Delete(i int) (pointerNode, error) {
 	if i < 0 || i > len(pn.keys) || i > len(pn.ptrs) {
 		return pointerNode{}, errNodeIdx
 	}

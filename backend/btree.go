@@ -4,7 +4,7 @@ import (
 	"errors"
 )
 
-const pageSize = 4096
+const PageSize = 4096
 
 type getFunc func(uint64) (node, error)
 type pullFunc func(uint64) (node, error)
@@ -44,7 +44,7 @@ func (bt *bTree) Get(k []byte) ([]byte, error) {
 func (bt *bTree) Insert(k, v []byte) error {
 	if bt.root == 0 {
 		root := leafNode{}
-		root, err := root.insert(0, k, v)
+		root, err := root.Insert(0, k, v)
 		if err != nil {
 			return err
 		}
@@ -67,19 +67,19 @@ func (bt *bTree) Insert(k, v []byte) error {
 		return err
 	}
 
-	if inserted.size() > pageSize {
+	if inserted.Size() > PageSize {
 		insertedPtr, err := bt.alloc(inserted)
 		if err != nil {
 			return err
 		}
 
-		k, err := inserted.key(0)
+		k, err := inserted.Key(0)
 		if err != nil {
 			return err
 		}
 
 		t := pointerNode{}
-		t.insert(0, k, insertedPtr)
+		t.Insert(0, k, insertedPtr)
 
 		inserted, err = bt.splitChildPtr(0, t, inserted)
 		if err != nil {
@@ -112,9 +112,9 @@ func (bt *bTree) Delete(k []byte) (bool, error) {
 		return deleted, nil
 	}
 
-	if root.typ() == ptrNode && root.total() == 1 {
+	if root.Type() == ptrNode && root.Total() == 1 {
 		pntrRoot := root.(pointerNode)
-		bt.root, _ = pntrRoot.ptr(0)
+		bt.root, _ = pntrRoot.Ptr(0)
 	} else {
 		bt.root, err = bt.alloc(root)
 		if err != nil {
@@ -126,9 +126,9 @@ func (bt *bTree) Delete(k []byte) (bool, error) {
 }
 
 func (bt *bTree) bTreeGet(n node, k []byte) (node, []byte, error) {
-	i, exists := n.search(k)
+	i, exists := n.Search(k)
 
-	switch n.typ() {
+	switch n.Type() {
 	case lfNode:
 		leafN := n.(leafNode)
 
@@ -136,7 +136,7 @@ func (bt *bTree) bTreeGet(n node, k []byte) (node, []byte, error) {
 			return nil, nil, errBTreeGetKey
 		}
 
-		v, err := leafN.val(i)
+		v, err := leafN.Val(i)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -145,7 +145,7 @@ func (bt *bTree) bTreeGet(n node, k []byte) (node, []byte, error) {
 	case ptrNode:
 		pntrN := n.(pointerNode)
 
-		ptr, _ := pntrN.ptr(i)
+		ptr, _ := pntrN.Ptr(i)
 		child, err := bt.get(ptr)
 		if err != nil {
 			return nil, nil, err
@@ -158,22 +158,22 @@ func (bt *bTree) bTreeGet(n node, k []byte) (node, []byte, error) {
 }
 
 func (bt *bTree) bTreeInsert(n node, k, v []byte) (node, error) {
-	i, exists := n.search(k)
+	i, exists := n.Search(k)
 
 	var err error
 	var inserted node
 
-	switch n.typ() {
+	switch n.Type() {
 	case lfNode:
 		leafN := n.(leafNode)
 
 		if !exists {
-			inserted, err = leafN.insert(i, k, v)
+			inserted, err = leafN.Insert(i, k, v)
 			if err != nil {
 				return nil, err
 			}
 		} else {
-			inserted, err = leafN.update(i, k, v)
+			inserted, err = leafN.Update(i, k, v)
 			if err != nil {
 				return nil, err
 			}
@@ -182,7 +182,7 @@ func (bt *bTree) bTreeInsert(n node, k, v []byte) (node, error) {
 	case ptrNode:
 		pntrN := n.(pointerNode)
 
-		ptr, _ := pntrN.ptr(i)
+		ptr, _ := pntrN.Ptr(i)
 		child, err := bt.get(ptr)
 		if err != nil {
 			return nil, err
@@ -193,7 +193,7 @@ func (bt *bTree) bTreeInsert(n node, k, v []byte) (node, error) {
 			return nil, err
 		}
 
-		if inserted.size() > pageSize {
+		if inserted.Size() > PageSize {
 			inserted, err = bt.splitChildPtr(i, pntrN, inserted)
 			if err != nil {
 				return nil, err
@@ -204,8 +204,8 @@ func (bt *bTree) bTreeInsert(n node, k, v []byte) (node, error) {
 				return nil, err
 			}
 
-			ptrKey, _ := pntrN.key(i)
-			inserted, err = pntrN.update(i, ptrKey, insertedPtr)
+			ptrKey, _ := pntrN.Key(i)
+			inserted, err = pntrN.Update(i, ptrKey, insertedPtr)
 			if err != nil {
 				return nil, err
 			}
@@ -221,19 +221,19 @@ func (bt *bTree) bTreeInsert(n node, k, v []byte) (node, error) {
 }
 
 func (bt *bTree) bTreeDelete(n node, k []byte) (node, bool, error) {
-	i, exists := n.search(k)
+	i, exists := n.Search(k)
 
 	var err error
 	var deleted node
 
-	switch n.typ() {
+	switch n.Type() {
 	case lfNode:
 		if !exists {
 			return nil, false, errBTreeDeleteKey
 		}
 
 		leafN := n.(leafNode)
-		deleted, err = leafN.delete(i)
+		deleted, err = leafN.Delete(i)
 		if err != nil {
 			return nil, false, err
 		}
@@ -241,7 +241,7 @@ func (bt *bTree) bTreeDelete(n node, k []byte) (node, bool, error) {
 	case ptrNode:
 		n := n.(pointerNode)
 
-		ptr, _ := n.ptr(i)
+		ptr, _ := n.Ptr(i)
 		child, err := bt.pull(ptr)
 		if err != nil {
 			return nil, false, err
@@ -252,7 +252,7 @@ func (bt *bTree) bTreeDelete(n node, k []byte) (node, bool, error) {
 			return nil, false, err
 		}
 
-		if deleted.size() > pageSize/4 {
+		if deleted.Size() > PageSize/4 {
 			deleted, err = bt.mergeChildPtr(i, n, deleted)
 			if err != nil {
 				return nil, false, err
@@ -263,8 +263,8 @@ func (bt *bTree) bTreeDelete(n node, k []byte) (node, bool, error) {
 				return nil, false, err
 			}
 
-			k, _ := deleted.key(i)
-			deleted, err = n.update(i, k, deletedPtr)
+			k, _ := deleted.Key(i)
+			deleted, err = n.Update(i, k, deletedPtr)
 			if err != nil {
 				return nil, false, err
 			}
@@ -278,7 +278,7 @@ func (bt *bTree) bTreeDelete(n node, k []byte) (node, bool, error) {
 }
 
 func (bt *bTree) splitChildPtr(i int, parent pointerNode, child node) (node, error) {
-	l, r := child.split()
+	l, r := child.Split()
 
 	lPtr, err := bt.alloc(l)
 	if err != nil {
@@ -290,22 +290,22 @@ func (bt *bTree) splitChildPtr(i int, parent pointerNode, child node) (node, err
 		return nil, err
 	}
 
-	lKey, err := parent.key(i)
+	lKey, err := parent.Key(i)
 	if err != nil {
 		return nil, err
 	}
 
-	split, err := parent.update(i, lKey, lPtr)
+	split, err := parent.Update(i, lKey, lPtr)
 	if err != nil {
 		return nil, err
 	}
 
-	rKey, err := r.key(0)
+	rKey, err := r.Key(0)
 	if err != nil {
 		return nil, err
 	}
 
-	split, err = parent.insert(i+1, rKey, rPtr)
+	split, err = parent.Insert(i+1, rKey, rPtr)
 	if err != nil {
 		return nil, err
 	}
@@ -319,8 +319,8 @@ func (bt *bTree) mergeChildPtr(i int, parent pointerNode, child node) (node, err
 	var sibling node
 	var merged bool = false
 
-	if i < parent.total()-1 {
-		siblingPtr, err = parent.ptr(i + 1)
+	if i < parent.Total()-1 {
+		siblingPtr, err = parent.Ptr(i + 1)
 		if err != nil {
 			return nil, err
 		}
@@ -330,8 +330,8 @@ func (bt *bTree) mergeChildPtr(i int, parent pointerNode, child node) (node, err
 			return nil, err
 		}
 
-		if sibling.size()+child.size() < pageSize {
-			child, err = child.merge(sibling)
+		if sibling.Size()+child.Size() < PageSize {
+			child, err = child.Merge(sibling)
 			if err != nil {
 				return nil, err
 			}
@@ -342,7 +342,7 @@ func (bt *bTree) mergeChildPtr(i int, parent pointerNode, child node) (node, err
 
 	if i != 0 {
 		i--
-		siblingPtr, err = parent.ptr(i)
+		siblingPtr, err = parent.Ptr(i)
 		if err != nil {
 			return nil, err
 		}
@@ -352,8 +352,8 @@ func (bt *bTree) mergeChildPtr(i int, parent pointerNode, child node) (node, err
 			return nil, err
 		}
 
-		if sibling.size()+child.size() < pageSize {
-			child, err = sibling.merge(child)
+		if sibling.Size()+child.Size() < PageSize {
+			child, err = sibling.Merge(child)
 			if err != nil {
 				return nil, err
 			}
@@ -368,9 +368,9 @@ func (bt *bTree) mergeChildPtr(i int, parent pointerNode, child node) (node, err
 			return nil, err
 		}
 
-		k, _ := parent.key(i)
+		k, _ := parent.Key(i)
 
-		parent, err = parent.update(i, k, ptr)
+		parent, err = parent.Update(i, k, ptr)
 		if err != nil {
 			return nil, err
 		}

@@ -23,15 +23,15 @@ var (
 )
 
 type node interface {
-	typ() nodeType
-	total() int
+	Type() nodeType
+	Total() int
 	// decode([]byte) error
-	encode() []byte
-	size() int
-	key(int) ([]byte, error)
-	search([]byte) (int, bool)
-	merge(node) (node, error)
-	split() (node, node)
+	Encode() []byte
+	Size() int
+	Key(int) ([]byte, error)
+	Search([]byte) (int, bool)
+	Merge(node) (node, error)
+	Split() (node, node)
 }
 
 func decodeNode(d []byte) (node, error) {
@@ -45,12 +45,12 @@ func decodeNode(d []byte) (node, error) {
 
 	case lfNode:
 		n := leafNode{}
-		n.decode(d)
+		n.Decode(d)
 		return &n, nil
 
 	case flNode:
 		n := freelistNode{}
-		n.decode(d)
+		n.Decode(d)
 		return &n, nil
 	}
 

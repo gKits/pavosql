@@ -13,7 +13,7 @@ var (
 	errKVPageTooLarge = errors.New("kv: page too large")
 )
 
-type KVStore struct {
+type Store struct {
 	path string
 	f    *os.File
 	bt   bTree
@@ -25,18 +25,18 @@ type KVStore struct {
 		nappend int
 		updates map[uint64][]byte
 	}
-	temp map[uint64][pageSize]byte
+	temp map[uint64][PageSize]byte
 	Sig  [16]byte
 }
 
-func (kv *KVStore) Open() error {
+func (kv *Store) Open() error {
 	f, err := os.OpenFile(kv.path, os.O_RDWR|os.O_CREATE, 0644)
 	if err != nil {
 		goto err
 	}
 	kv.f = f
 
-	if err = kv.mmap.init(kv.f); err != nil {
+	if err = kv.mmap.Init(kv.f); err != nil {
 		goto err
 	}
 
@@ -72,25 +72,25 @@ err:
 	return err
 }
 
-func (kv *KVStore) Close() {
-	if err := kv.mmap.close(); err != nil {
+func (kv *Store) Close() {
+	if err := kv.mmap.Close(); err != nil {
 		panic(err)
 	}
 	kv.f.Close()
 }
 
-func (kv *KVStore) Get(k []byte) ([]byte, error) {
+func (kv *Store) Get(k []byte) ([]byte, error) {
 	return kv.bt.Get(k)
 }
 
-func (kv *KVStore) Set(k, v []byte) error {
+func (kv *Store) Set(k, v []byte) error {
 	if err := kv.bt.Insert(k, v); err != nil {
 		return err
 	}
 	return kv.flush()
 }
 
-func (kv *KVStore) Del(k []byte) (bool, error) {
+func (kv *Store) Del(k []byte) (bool, error) {
 	del, err := kv.bt.Delete(k)
 	if err != nil {
 		return false, err
@@ -98,21 +98,21 @@ func (kv *KVStore) Del(k []byte) (bool, error) {
 	return del, kv.flush()
 }
 
-func (kv *KVStore) flush() error {
+func (kv *Store) flush() error {
 	if err := kv.writePages(); err != nil {
 		return err
 	}
 	return kv.syncPages()
 }
 
-func (kv *KVStore) writePages() error {
+func (kv *Store) writePages() error {
 	nPages := int(kv.page.flushed) + len(kv.page.temp)
 
-	if err := kv.extendFile(nPages); err != nil {
+	if err := kv.mmap.ExtendFile(kv.f, nPages); err != nil {
 		return err
 	}
 
-	if err := kv.mmap.extend(kv.f, nPages); err != nil {
+	if err := kv.mmap.Extend(kv.f, nPages); err != nil {
 		return err
 	}
 
@@ -121,13 +121,13 @@ func (kv *KVStore) writePages() error {
 		if err != nil {
 			return err
 		}
-		copy(n.encode(), page)
+		copy(n.Encode(), page)
 	}
 
 	return nil
 }
 
-func (kv *KVStore) syncPages() error {
+func (kv *Store) syncPages() error {
 	if err := kv.f.Sync(); err != nil {
 		return err
 	}
@@ -146,7 +146,7 @@ func (kv *KVStore) syncPages() error {
 	return nil
 }
 
-func (kv *KVStore) loadMaster() error {
+func (kv *Store) loadMaster() error {
 	if kv.mmap.fileSize == 0 {
 		kv.page.flushed = 1
 		return nil
@@ -162,7 +162,7 @@ func (kv *KVStore) loadMaster() error {
 	flRoot := binary.BigEndian.Uint64(b[24:32])
 	nPages := binary.BigEndian.Uint64(b[32:40])
 
-	if 1 > nPages || nPages > (uint64(kv.mmap.fileSize/pageSize)) || 0 > btRoot || btRoot >= nPages {
+	if 1 > nPages || nPages > (uint64(kv.mmap.fileSize/PageSize)) || 0 > btRoot || btRoot >= nPages {
 		return errKVBadMaster
 	}
 
@@ -172,7 +172,7 @@ func (kv *KVStore) loadMaster() error {
 	return nil
 }
 
-func (kv *KVStore) writeMaster() error {
+func (kv *Store) writeMaster() error {
 	d := [40]byte{}
 	copy(d[:16], kv.Sig[:])
 	binary.BigEndian.PutUint64(d[16:], kv.bt.root)
@@ -186,19 +186,15 @@ func (kv *KVStore) writeMaster() error {
 	return nil
 }
 
-func (kv *KVStore) extendFile(n int) error {
-	return kv.mmap.extendFile(kv.f, n)
-}
-
-func (kv *KVStore) getPage(ptr uint64) (node, error) {
+func (kv *Store) getPage(ptr uint64) (node, error) {
 	page, ok := kv.page.updates[ptr]
 	if !ok {
 		start := uint64(0)
 		for _, chunk := range kv.mmap.chunks {
-			end := start + uint64(len(chunk))/pageSize
+			end := start + uint64(len(chunk))/PageSize
 			if ptr < end {
-				off := pageSize * (ptr - start)
-				page = chunk[off : off+pageSize]
+				off := PageSize * (ptr - start)
+				page = chunk[off : off+PageSize]
 				break
 			}
 			start = end
@@ -210,7 +206,7 @@ func (kv *KVStore) getPage(ptr uint64) (node, error) {
 	return decodeNode(page)
 }
 
-func (kv *KVStore) pullPage(ptr uint64) (node, error) {
+func (kv *Store) pullPage(ptr uint64) (node, error) {
 	n, err := kv.getPage(ptr)
 	if err != nil {
 		return nil, err
@@ -223,12 +219,12 @@ func (kv *KVStore) pullPage(ptr uint64) (node, error) {
 	return n, nil
 }
 
-func (kv *KVStore) allocPage(n node) (uint64, error) {
-	if n.size() > pageSize {
+func (kv *Store) allocPage(n node) (uint64, error) {
+	if n.Size() > PageSize {
 		return 0, errKVPageTooLarge
 	}
 
-	ptr, err := kv.fl.pop()
+	ptr, err := kv.fl.Pop()
 	if errors.Is(err, errFLPopEmpty) {
 		ptr = kv.page.flushed + uint64(kv.page.nappend)
 		kv.page.nappend++
@@ -236,11 +232,14 @@ func (kv *KVStore) allocPage(n node) (uint64, error) {
 		return 0, err
 	}
 
-	kv.page.updates[ptr] = n.encode()
+	kv.page.updates[ptr] = n.Encode()
 	return ptr, nil
 }
 
-func (kv *KVStore) freePage(ptr uint64) error {
+func (kv *Store) freePage(ptr uint64) error {
 	kv.page.updates[ptr] = nil
+	if err := kv.fl.Push(ptr); err != nil {
+		return err
+	}
 	return nil
 }

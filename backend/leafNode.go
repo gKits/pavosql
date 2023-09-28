@@ -11,7 +11,7 @@ type leafNode struct {
 	vals [][]byte
 }
 
-func (ln *leafNode) decode(d []byte) error {
+func (ln *leafNode) Decode(d []byte) error {
 	if nodeType(binary.BigEndian.Uint16(d[0:2])) != lfNode {
 		return errNodeDecode
 	}
@@ -36,15 +36,15 @@ func (ln *leafNode) decode(d []byte) error {
 
 // node interface methods
 
-func (ln leafNode) typ() nodeType {
+func (ln leafNode) Type() nodeType {
 	return lfNode
 }
 
-func (ln leafNode) total() int {
+func (ln leafNode) Total() int {
 	return len(ln.keys)
 }
 
-func (ln leafNode) encode() []byte {
+func (ln leafNode) Encode() []byte {
 	var b []byte
 
 	b = binary.BigEndian.AppendUint16(b, uint16(lfNode))
@@ -60,7 +60,7 @@ func (ln leafNode) encode() []byte {
 	return b
 }
 
-func (ln leafNode) size() int {
+func (ln leafNode) Size() int {
 	size := 4
 	for i, k := range ln.keys {
 		v := ln.vals[i]
@@ -69,14 +69,14 @@ func (ln leafNode) size() int {
 	return size
 }
 
-func (ln leafNode) key(i int) ([]byte, error) {
+func (ln leafNode) Key(i int) ([]byte, error) {
 	if i < 0 || i >= len(ln.keys) {
 		return nil, errNodeIdx
 	}
 	return ln.keys[i], nil
 }
 
-func (ln leafNode) search(k []byte) (int, bool) {
+func (ln leafNode) Search(k []byte) (int, bool) {
 	l := 0
 	r := len(ln.keys)
 
@@ -103,7 +103,7 @@ func (ln leafNode) search(k []byte) (int, bool) {
 	return i, false
 }
 
-func (ln leafNode) merge(toMerge node) (node, error) {
+func (ln leafNode) Merge(toMerge node) (node, error) {
 	right, ok := toMerge.(*leafNode)
 	if !ok {
 		return nil, errNodeMerge
@@ -119,10 +119,10 @@ func (ln leafNode) merge(toMerge node) (node, error) {
 	return &ln, nil
 }
 
-func (ln leafNode) split() (node, node) {
+func (ln leafNode) Split() (node, node) {
 	var half int
 	var size int = 0
-	lnSize := ln.size()
+	lnSize := ln.Size()
 
 	for i, k := range ln.keys {
 		v := ln.vals[i]
@@ -147,21 +147,21 @@ func (ln leafNode) split() (node, node) {
 
 // leafNode specific methods
 
-func (ln *leafNode) val(i int) ([]byte, error) {
+func (ln *leafNode) Val(i int) ([]byte, error) {
 	if i < 0 || i >= len(ln.vals) {
 		return nil, errNodeIdx
 	}
 	return ln.vals[i], nil
 }
 
-func (ln *leafNode) keyVal(i int) ([]byte, []byte, error) {
+func (ln *leafNode) KeyVal(i int) ([]byte, []byte, error) {
 	if i < 0 || i >= len(ln.keys) || i >= len(ln.vals) {
 		return nil, nil, errNodeIdx
 	}
 	return ln.keys[i], ln.vals[i], nil
 }
 
-func (ln leafNode) insert(i int, k, v []byte) (leafNode, error) {
+func (ln leafNode) Insert(i int, k, v []byte) (leafNode, error) {
 	if i < 0 || i > len(ln.keys) || i > len(ln.vals) {
 		return leafNode{}, errNodeIdx
 	}
@@ -172,7 +172,7 @@ func (ln leafNode) insert(i int, k, v []byte) (leafNode, error) {
 	return ln, nil
 }
 
-func (ln leafNode) update(i int, k, v []byte) (leafNode, error) {
+func (ln leafNode) Update(i int, k, v []byte) (leafNode, error) {
 	if i < 0 || i > len(ln.keys) || i > len(ln.vals) {
 		return leafNode{}, errNodeIdx
 	} else if slices.Equal(k, ln.keys[i]) {
@@ -184,7 +184,7 @@ func (ln leafNode) update(i int, k, v []byte) (leafNode, error) {
 	return ln, nil
 }
 
-func (ln leafNode) delete(i int) (leafNode, error) {
+func (ln leafNode) Delete(i int) (leafNode, error) {
 	if i < 0 || i > len(ln.keys) || i > len(ln.vals) {
 		return leafNode{}, errNodeIdx
 	}

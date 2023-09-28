@@ -10,7 +10,7 @@ type freelistNode struct {
 	ptrs []uint64
 }
 
-func (fn *freelistNode) decode(d []byte) error {
+func (fn *freelistNode) Decode(d []byte) error {
 	if nodeType(binary.BigEndian.Uint16(d[0:2])) != flNode {
 		return errNodeDecode
 	}
@@ -26,11 +26,11 @@ func (fn *freelistNode) decode(d []byte) error {
 
 // node interface methods
 
-func (fn freelistNode) typ() nodeType {
+func (fn freelistNode) Type() nodeType {
 	return flNode
 }
 
-func (fn freelistNode) encode() []byte {
+func (fn freelistNode) Encode() []byte {
 	var b []byte
 
 	binary.BigEndian.AppendUint16(b, uint16(flNode))
@@ -43,45 +43,45 @@ func (fn freelistNode) encode() []byte {
 	return b
 }
 
-func (fn freelistNode) total() int {
+func (fn freelistNode) Total() int {
 	return len(fn.ptrs)
 }
 
-func (fn freelistNode) size() int {
+func (fn freelistNode) Size() int {
 	return 12 + len(fn.ptrs)*8
 }
 
 // Useless methods to implement node interface
 
 // Do not use! This method exists for interface purposes only.
-func (fn freelistNode) key(i int) ([]byte, error) {
+func (fn freelistNode) Key(i int) ([]byte, error) {
 	return nil, errors.New("")
 }
 
 // Do not use! This method exists for interface purposes only.
-func (fn freelistNode) search(k []byte) (int, bool) {
+func (fn freelistNode) Search(k []byte) (int, bool) {
 	return -1, false
 }
 
 // Do not use! This method exists for interface purposes only.
-func (fn freelistNode) merge(n node) (node, error) {
+func (fn freelistNode) Merge(n node) (node, error) {
 	return nil, errors.New("")
 }
 
 // Do not use! This method exists for interface purposes only.
-func (fn freelistNode) split() (node, node) {
+func (fn freelistNode) Split() (node, node) {
 	return nil, nil
 }
 
 // freelistNode specific methods
 
-func (fn freelistNode) pop() (uint64, freelistNode) {
-	last := fn.ptrs[fn.total()-1]
-	fn.ptrs = fn.ptrs[:fn.total()-1]
+func (fn freelistNode) Pop() (uint64, freelistNode) {
+	last := fn.ptrs[fn.Total()-1]
+	fn.ptrs = fn.ptrs[:fn.Total()-1]
 	return last, fn
 }
 
-func (fn freelistNode) push(ptr uint64) freelistNode {
+func (fn freelistNode) Push(ptr uint64) freelistNode {
 	fn.ptrs = append(fn.ptrs, ptr)
 	return fn
 }

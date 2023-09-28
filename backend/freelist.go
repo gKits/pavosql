@@ -14,10 +14,10 @@ type freelist struct {
 }
 
 var (
-	errFLPopEmpty = errors.New("freelist: cannot pop from empty freelist")
+	errFLPopEmpty = errors.New("freelist: cannot Pop from empty freelist")
 )
 
-func (fl *freelist) pop() (uint64, error) {
+func (fl *freelist) Pop() (uint64, error) {
 	if fl.root == 0 {
 		return 0, errFLPopEmpty
 	}
@@ -40,7 +40,7 @@ func (fl *freelist) pop() (uint64, error) {
 	return res, nil
 }
 
-func (fl *freelist) push(val uint64) error {
+func (fl *freelist) Push(val uint64) error {
 	var root freelistNode
 	var err error
 
@@ -68,7 +68,7 @@ func (fl *freelist) push(val uint64) error {
 
 func (fl *freelist) freelistPop(fn freelistNode) (freelistNode, uint64, error) {
 	if fn.next == 0 {
-		ptr, popped := fn.pop()
+		ptr, popped := fn.Pop()
 		return popped, ptr, nil
 	}
 
@@ -83,7 +83,7 @@ func (fl *freelist) freelistPop(fn freelistNode) (freelistNode, uint64, error) {
 	}
 
 	// free next when it does not contain any pointers
-	if next.total() == 0 {
+	if next.Total() == 0 {
 		if err := fl.free(fn.next); err != nil {
 			return freelistNode{}, 0, err
 		}
@@ -101,7 +101,7 @@ func (fl *freelist) freelistPop(fn freelistNode) (freelistNode, uint64, error) {
 func (fl *freelist) freelistPush(fn freelistNode, val uint64) (freelistNode, error) {
 	if fn.next == 0 {
 		// create sub node when added pointer would exceed page size
-		if fn.size()+8 >= pageSize {
+		if fn.Size()+8 >= PageSize {
 			sub := freelistNode{0, []uint64{val}}
 
 			ptr, err := fl.alloc(sub)
@@ -113,7 +113,7 @@ func (fl *freelist) freelistPush(fn freelistNode, val uint64) (freelistNode, err
 			return fn, nil
 		}
 
-		pushed := fn.push(val)
+		pushed := fn.Push(val)
 		return pushed, nil
 	}
 
