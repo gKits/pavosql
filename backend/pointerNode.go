@@ -65,7 +65,7 @@ func (pn pointerNode) size() int {
 }
 
 func (pn pointerNode) key(i int) ([]byte, error) {
-	if i >= len(pn.keys) {
+	if i < 0 || i >= len(pn.keys) {
 		return nil, errNodeIdx
 	}
 	return pn.keys[i], nil
@@ -140,21 +140,21 @@ func (pn pointerNode) split() (node, node) {
 // pointerNode specific methods
 
 func (pn *pointerNode) ptr(i int) (uint64, error) {
-	if i >= len(pn.ptrs) {
+	if i < 0 || i >= len(pn.ptrs) {
 		return 0, errNodeIdx
 	}
 	return pn.ptrs[i], nil
 }
 
 func (pn *pointerNode) keyPtr(i int) ([]byte, uint64, error) {
-	if i >= len(pn.keys) || i >= len(pn.ptrs) {
+	if i < 0 || i >= len(pn.keys) || i >= len(pn.ptrs) {
 		return nil, 0, errNodeIdx
 	}
 	return pn.keys[i], pn.ptrs[i], nil
 }
 
 func (pn pointerNode) insert(i int, k []byte, ptr uint64) (pointerNode, error) {
-	if i > len(pn.keys) || i > len(pn.ptrs) {
+	if i < 0 || i > len(pn.keys) || i > len(pn.ptrs) {
 		return pointerNode{}, errNodeIdx
 	}
 
@@ -165,7 +165,7 @@ func (pn pointerNode) insert(i int, k []byte, ptr uint64) (pointerNode, error) {
 }
 
 func (pn pointerNode) update(i int, k []byte, ptr uint64) (pointerNode, error) {
-	if i > len(pn.keys) || i > len(pn.ptrs) {
+	if i < 0 || i > len(pn.keys) || i > len(pn.ptrs) {
 		return pointerNode{}, errNodeIdx
 	} else if slices.Equal(k, pn.keys[i]) {
 		return pointerNode{}, errNodeUpdate
@@ -177,7 +177,7 @@ func (pn pointerNode) update(i int, k []byte, ptr uint64) (pointerNode, error) {
 }
 
 func (pn pointerNode) delete(i int) (pointerNode, error) {
-	if i > len(pn.keys) || i > len(pn.ptrs) {
+	if i < 0 || i > len(pn.keys) || i > len(pn.ptrs) {
 		return pointerNode{}, errNodeIdx
 	}
 

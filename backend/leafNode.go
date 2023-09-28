@@ -70,7 +70,7 @@ func (ln leafNode) size() int {
 }
 
 func (ln leafNode) key(i int) ([]byte, error) {
-	if i >= len(ln.keys) {
+	if i < 0 || i >= len(ln.keys) {
 		return nil, errNodeIdx
 	}
 	return ln.keys[i], nil
@@ -144,21 +144,21 @@ func (ln leafNode) split() (node, node) {
 // leafNode specific methods
 
 func (ln *leafNode) val(i int) ([]byte, error) {
-	if i >= len(ln.vals) {
+	if i < 0 || i >= len(ln.vals) {
 		return nil, errNodeIdx
 	}
 	return ln.vals[i], nil
 }
 
 func (ln *leafNode) keyVal(i int) ([]byte, []byte, error) {
-	if i >= len(ln.keys) || i >= len(ln.vals) {
+	if i < 0 || i >= len(ln.keys) || i >= len(ln.vals) {
 		return nil, nil, errNodeIdx
 	}
 	return ln.keys[i], ln.vals[i], nil
 }
 
 func (ln leafNode) insert(i int, k, v []byte) (leafNode, error) {
-	if i > len(ln.keys) || i > len(ln.vals) {
+	if i < 0 || i > len(ln.keys) || i > len(ln.vals) {
 		return leafNode{}, errNodeIdx
 	}
 
@@ -169,7 +169,7 @@ func (ln leafNode) insert(i int, k, v []byte) (leafNode, error) {
 }
 
 func (ln leafNode) update(i int, k, v []byte) (leafNode, error) {
-	if i > len(ln.keys) || i > len(ln.vals) {
+	if i < 0 || i > len(ln.keys) || i > len(ln.vals) {
 		return leafNode{}, errNodeIdx
 	} else if slices.Equal(k, ln.keys[i]) {
 		return leafNode{}, errNodeUpdate
@@ -181,7 +181,7 @@ func (ln leafNode) update(i int, k, v []byte) (leafNode, error) {
 }
 
 func (ln leafNode) delete(i int) (leafNode, error) {
-	if i > len(ln.keys) || i > len(ln.vals) {
+	if i < 0 || i > len(ln.keys) || i > len(ln.vals) {
 		return leafNode{}, errNodeIdx
 	}
 
