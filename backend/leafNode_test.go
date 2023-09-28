@@ -77,6 +77,14 @@ func TestLeafNodeDecode(t *testing.T) {
 	}
 }
 
+func TestLeafNodeTyp(t *testing.T) {
+	ln := &leafNode{}
+
+	if ln.typ() != lfNode {
+		t.Errorf("Expected type %v, but got %v", lfNode, ln.typ())
+	}
+}
+
 func TestLeafNodeEncode(t *testing.T) {
 	cases := []struct {
 		name     string
@@ -132,6 +140,59 @@ func TestLeafNodeSize(t *testing.T) {
 
 			if res != c.expected {
 				t.Errorf("Expected node size %v, but got %v", c.expected, res)
+			}
+		})
+	}
+}
+
+func TestLeafNodeKey(t *testing.T) {
+	ln := &leafNode{
+		keys: [][]byte{{'a'}, {'b'}, {'c'}, {'d'}, {'e'}, {'f'}},
+		vals: [][]byte{{'1'}, {'2'}, {'3'}, {'4'}, {'5'}, {'6'}},
+	}
+
+	cases := []struct {
+		name        string
+		input       int
+		expected    []byte
+		expectedErr error
+	}{
+		{
+			name:        "Key at index 0",
+			input:       0,
+			expected:    []byte{'a'},
+			expectedErr: nil,
+		},
+		{
+			name:        "Key at last index",
+			input:       5,
+			expected:    []byte{'f'},
+			expectedErr: nil,
+		},
+		{
+			name:        "Too large key",
+			input:       6,
+			expected:    nil,
+			expectedErr: errNodeIdx,
+		},
+		{
+			name:        "Negative key",
+			input:       -1,
+			expected:    nil,
+			expectedErr: errNodeIdx,
+		},
+	}
+
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			res, err := ln.key(c.input)
+
+			if err != c.expectedErr {
+				t.Errorf("Expected error %v, but got %v", c.expectedErr, err)
+			}
+
+			if !bytes.Equal(res, c.expected) {
+				t.Errorf("Expected key %v, but got %v", c.expected, res)
 			}
 		})
 	}
