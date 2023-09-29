@@ -1,12 +1,12 @@
 package core
 
 import (
-	store "github.com/gKits/PavoSQL/backend"
+	"github.com/gKits/PavoSQL/store"
 )
 
 type database struct {
 	path      string
-	kv        store.KVStore
+	kv        store.Store
 	tables    map[string]*table
 	metaTable table
 	defTable  table
