@@ -84,7 +84,7 @@ func (kv *Store) Get(k []byte) ([]byte, error) {
 }
 
 func (kv *Store) Set(k, v []byte) error {
-	if err := kv.bt.Insert(k, v); err != nil {
+	if err := kv.bt.Set(k, v); err != nil {
 		return err
 	}
 	return kv.flush()

@@ -41,7 +41,7 @@ func (bt *bTree) Get(k []byte) ([]byte, error) {
 	return v, err
 }
 
-func (bt *bTree) Insert(k, v []byte) error {
+func (bt *bTree) Set(k, v []byte) error {
 	if bt.root == 0 {
 		root := leafNode{}
 		root, err := root.Insert(0, k, v)
