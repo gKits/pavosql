@@ -48,7 +48,7 @@ func TestPointerNodeDecode(t *testing.T) {
 		t.Run(c.name, func(t *testing.T) {
 			pn := &pointerNode{}
 
-			err := pn.decode(c.input)
+			err := pn.Decode(c.input)
 
 			if err != c.expectedErr {
 				t.Errorf("Expected error %v, but got %v", c.expectedErr, err)
@@ -80,8 +80,8 @@ func TestPointerNodeDecode(t *testing.T) {
 func TestPointerNodeTyp(t *testing.T) {
 	pn := &pointerNode{}
 
-	if pn.typ() != ptrNode {
-		t.Errorf("Expected type %v, but got %v", ptrNode, pn.typ())
+	if pn.Type() != ptrNode {
+		t.Errorf("Expected type %v, but got %v", ptrNode, pn.Type())
 	}
 }
 
@@ -109,7 +109,7 @@ func TestPointerNodeEncode(t *testing.T) {
 
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			res := c.input.encode()
+			res := c.input.Encode()
 
 			if !bytes.Equal(res, c.expected) {
 				t.Errorf("Expected %v, but got %v", c.expected, res)
@@ -136,7 +136,7 @@ func TestPointerNodeSize(t *testing.T) {
 
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			res := c.input.size()
+			res := c.input.Size()
 
 			if res != c.expected {
 				t.Errorf("Expected node size %v, but got %v", c.expected, res)
@@ -185,7 +185,7 @@ func TestPointerNodeKey(t *testing.T) {
 
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			res, err := pn.key(c.input)
+			res, err := pn.Key(c.input)
 
 			if err != c.expectedErr {
 				t.Errorf("Expected error %v, but got %v", c.expectedErr, err)
@@ -330,7 +330,7 @@ func TestPointerNodeSearch(t *testing.T) {
 
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			res, exists := c.pn.search(c.input)
+			res, exists := c.pn.Search(c.input)
 
 			if exists != c.expectedExists {
 				t.Errorf("Expected the key existing %v, but got %v", c.expectedExists, exists)
@@ -384,7 +384,7 @@ func TestPointerNodeMerge(t *testing.T) {
 
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			res, err := c.left.merge(c.right)
+			res, err := c.left.Merge(c.right)
 
 			if c.expectedErr != err {
 				t.Errorf("Expected error %v, but got %v", c.expectedErr, err)
@@ -446,7 +446,7 @@ func TestPointerNodeSplit(t *testing.T) {
 
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			resL, resR := c.pn.split()
+			resL, resR := c.pn.Split()
 
 			left := resL.(*pointerNode)
 			right := resR.(*pointerNode)

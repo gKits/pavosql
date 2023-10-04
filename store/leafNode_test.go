@@ -48,7 +48,7 @@ func TestLeafNodeDecode(t *testing.T) {
 		t.Run(c.name, func(t *testing.T) {
 			ln := &leafNode{}
 
-			err := ln.decode(c.input)
+			err := ln.Decode(c.input)
 
 			if err != c.expectedErr {
 				t.Errorf("Expected error %v, but got %v", c.expectedErr, err)

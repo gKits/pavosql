@@ -40,7 +40,7 @@ func decodeNode(d []byte) (node, error) {
 	switch typ {
 	case ptrNode:
 		n := pointerNode{}
-		n.decode(d)
+		n.Decode(d)
 		return &n, nil
 
 	case lfNode:
