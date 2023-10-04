@@ -1,4 +1,4 @@
-name: Go
+name: Go build
 on: [push]
 
 jobs:
@@ -15,5 +15,3 @@ jobs:
         run: go get .
       - name: Build
         run: go build -v ./cmd/pavosql
-      - name: Test with the Go CLI
-        run: go test -v ./...
