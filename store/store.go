@@ -25,8 +25,7 @@ type Store struct {
 		nappend int
 		updates map[uint64][]byte
 	}
-	temp map[uint64][PageSize]byte
-	Sig  [16]byte
+	Sig [16]byte
 }
 
 func (kv *Store) Open() error {
@@ -162,7 +161,7 @@ func (kv *Store) loadMaster() error {
 	flRoot := binary.BigEndian.Uint64(b[24:32])
 	nPages := binary.BigEndian.Uint64(b[32:40])
 
-	if 1 > nPages || nPages > (uint64(kv.mmap.fileSize/PageSize)) || 0 > btRoot || btRoot >= nPages {
+	if 1 > nPages || nPages > (uint64(kv.mmap.fileSize/PageSize)) || btRoot >= nPages {
 		return errKVBadMaster
 	}
 

@@ -305,7 +305,7 @@ func (bt *bTree) splitChildPtr(i int, parent pointerNode, child node) (node, err
 		return nil, err
 	}
 
-	split, err = parent.Insert(i+1, rKey, rPtr)
+	split, err = split.Insert(i+1, rKey, rPtr)
 	if err != nil {
 		return nil, err
 	}
