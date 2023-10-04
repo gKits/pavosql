@@ -2,7 +2,6 @@ package store
 
 import (
 	"encoding/binary"
-	"errors"
 )
 
 type freelistNode struct {
@@ -55,7 +54,7 @@ func (fn freelistNode) Size() int {
 
 // Do not use! This method exists for interface purposes only.
 func (fn freelistNode) Key(i int) ([]byte, error) {
-	return nil, errors.New("")
+	return nil, errNodeUseless
 }
 
 // Do not use! This method exists for interface purposes only.
@@ -65,7 +64,7 @@ func (fn freelistNode) Search(k []byte) (int, bool) {
 
 // Do not use! This method exists for interface purposes only.
 func (fn freelistNode) Merge(n node) (node, error) {
-	return nil, errors.New("")
+	return nil, errNodeUseless
 }
 
 // Do not use! This method exists for interface purposes only.
