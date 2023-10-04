@@ -116,7 +116,7 @@ func (pn pointerNode) Merge(toMerge node) (node, error) {
 func (pn pointerNode) Split() (node, node) {
 	var half int
 	var size int = 0
-	var pnSize = pn.size()
+	var pnSize = pn.Size()
 
 	for i, k := range pn.keys {
 		size += 2 + len(k) + 8
