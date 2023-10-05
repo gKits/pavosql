@@ -108,9 +108,24 @@ func (l *lexer) emitToken(t token) stateFn {
 }
 
 func (l *lexer) run() {
-	for state := lexIdent; state != nil; {
+	for state := lexDefault; state != nil; {
 		state = nil
 	}
+}
+
+func lexDefault(l *lexer) stateFn {
+	switch l.next() {
+	case eof:
+	case '"':
+		return lexString
+	case '`':
+		return lexRawString
+	case '+', '-':
+		return lexNumber
+	default:
+		return lexIdent
+	}
+	return nil
 }
 
 func lexIdent(l *lexer) stateFn {
@@ -136,7 +151,7 @@ loop:
 	for {
 		switch l.next() {
 		case '\\':
-			if r := l.next(); r != eof {
+			if r := l.next(); r != eof && r != '\n' {
 				break
 			}
 			fallthrough
@@ -153,12 +168,15 @@ loop:
 }
 
 func lexRawString(l *lexer) stateFn {
+loop:
 	for {
 		switch l.next() {
 		case '`':
-
+			break loop
 		}
 	}
+
+	return l.emit(tokString)
 }
 
 func lexNumber(l *lexer) stateFn {
