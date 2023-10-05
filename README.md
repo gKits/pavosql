@@ -32,3 +32,23 @@ PavoSQL is a SQL relational Database written in pure Go, meaning only using Go's
 - [ ] Installable as service/daemon (e.g. systemd)
 - [ ] Create and release Docker image
 - [ ] 80% Test coverage (not needed but nice to have)
+
+## Reference material
+
+> **Build your own Database from Scratch**  
+> by James Smith  
+> [Book](https://build-your-own.org/database/)
+
+> **GoSQL / Writing a SQL database from Scratch**  
+> by Phil Eaton  
+> [Blog](https://notes.eatonphil.com/database-basics.html)  
+> [Repo](https://github.com/eatonphil/gosql)
+
+> **Lexical Scanning in Go**  
+> by Rob Pike  
+> [Video](https://www.youtube.com/watch?v=HxaD_trXwRE)  
+> [Slides](https://go.dev/talks/2011/lex.slide)
+
+> **SQLite Documentation**  
+> by SQLite  
+> [Docs](https://sqlite.org/docs.html)
