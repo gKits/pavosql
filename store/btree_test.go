@@ -5,7 +5,9 @@ import (
 	"testing"
 )
 
-var mockStore map[uint64]node
+var mockStore = map[uint64]node{
+	0: nil,
+}
 var lastPtr uint64 = 0
 
 func mockGetPage(ptr uint64) (node, error) {
@@ -51,18 +53,29 @@ func TestBTreeGet(t *testing.T) {
 		input       []byte
 		expected    []byte
 		expectedErr error
-	}{}
+	}{
+		{
+			name: "Get first key",
+			bt: bTree{
+				root:  0,
+				get:   mockGetPage,
+				pull:  mockPullPage,
+				alloc: mockAllocPage,
+				free:  mockFreePage,
+			},
+		},
+	}
 
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
 			res, err := c.bt.Get(c.input)
 
 			if err != c.expectedErr {
-
+				t.Errorf("")
 			}
 
 			if !bytes.Equal(c.expected, res) {
-
+				t.Errorf("")
 			}
 		})
 	}
