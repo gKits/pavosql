@@ -5,15 +5,31 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/gKits/PavoSQL/store"
+	"github.com/gKits/PavoSQL/internal/kvstore"
 )
 
-type Database struct {
+type DB struct {
 	Name string
-	kv   store.Store
+	kv   kvstore.KVStore
 }
 
-func (db *Database) Get(tbName string, r *Row) error {
+func (db *DB) Query(tbName string, pk []byte) {
+	tb, err := db.GetTable(tbName)
+	if err != nil {
+
+	}
+
+	r, err := db.kv.Read()
+	if err != nil {
+	}
+
+	val, err := db.kv.Get(pk)
+	if err != nil {
+
+	}
+}
+
+func (db *DB) Get(tbName string, r *Row) error {
 	tb, err := db.GetTable(tbName)
 	if err != nil {
 		return fmt.Errorf("table '%s' not found: %v", tbName, err)
@@ -24,13 +40,30 @@ func (db *Database) Get(tbName string, r *Row) error {
 	return nil
 }
 
-func (db *Database) Insert(tbName string) {}
+func (db *DB) Insert(tbName string, vals []Row) error {
+	w, err := db.kv.Write()
+	if err != nil {
+		w.Abort()
+		return err
+	}
 
-func (db *Database) Update() {}
+	for _, v := range vals {
 
-func (db *Database) Delete(tbName string) {}
+	}
 
-func (db *Database) GetTable(tbName string) (table, error) {
+	if err := w.Commit(); err != nil {
+		w.Abort()
+		return err
+	}
+
+	return nil
+}
+
+func (db *DB) Update() {}
+
+func (db *DB) Delete(tbName string) {}
+
+func (db *DB) GetTable(tbName string) (table, error) {
 	k := defaultTBDefTable.encodeKey([]byte(tbName))
 
 	v, err := db.kv.Get(k)
@@ -46,7 +79,7 @@ func (db *Database) GetTable(tbName string) (table, error) {
 	return tb, nil
 }
 
-func (db *Database) CreateTable(tb table) error {
+func (db *DB) CreateTable(tb table) error {
 	v, err := json.Marshal(tb)
 	if err != nil {
 		return err
@@ -68,7 +101,7 @@ func (db *Database) CreateTable(tb table) error {
 	return nil
 }
 
-func (db *Database) DeleteTable(tbName string) (bool, error) {
+func (db *DB) DeleteTable(tbName string) (bool, error) {
 	k := defaultTBDefTable.encodeKey([]byte(tbName))
 
 	del, err := db.kv.Del(k)
@@ -79,7 +112,7 @@ func (db *Database) DeleteTable(tbName string) (bool, error) {
 	return del, nil
 }
 
-func (db *Database) prefix() (uint32, error) {
+func (db *DB) prefix() (uint32, error) {
 	k := defaultMetaTable.encodeKey([]byte("prefix"))
 
 	_, err := db.kv.Get(k)
@@ -92,7 +125,7 @@ func (db *Database) prefix() (uint32, error) {
 	return pref, nil
 }
 
-func (db *Database) nextPrefix() (uint32, error) {
+func (db *DB) nextPrefix() (uint32, error) {
 	k := defaultMetaTable.encodeKey([]byte("prefix"))
 
 	v, err := db.kv.Get(k)

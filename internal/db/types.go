@@ -54,5 +54,4 @@ func (dT dbType) String() string {
 	default:
 		return fmt.Sprintf("%d", dT)
 	}
-
 }

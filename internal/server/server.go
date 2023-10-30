@@ -7,7 +7,7 @@ import (
 	_ "net/http"
 
 	"github.com/gKits/PavoSQL/dbms"
-	"github.com/gKits/PavoSQL/parse"
+	"github.com/gKits/PavoSQL/parser"
 )
 
 type Server struct {
@@ -15,7 +15,7 @@ type Server struct {
 	Port     uint16
 	listener net.Listener
 	dbms     dbms.DBMS
-	parse    parse.Parser
+	parser   parser.Parser
 	count    int
 }
 
@@ -31,7 +31,7 @@ func NewServer(addr string, port uint16) (Server, error) {
 		Port:     port,
 		listener: listener,
 		dbms:     dbms.DBMS{},
-		parse:    parse.Parser{},
+		parser:   parser.Parser{},
 		count:    0,
 	}, nil
 }
@@ -64,7 +64,7 @@ func (s *Server) handleConnection(conn net.Conn) {
 
 		case "h", "help":
 		default:
-			// TODO: Implement parse, operate, respond loop
+			// TODO: Implement parser, operate, respond loop
 		}
 	}
 	s.count--

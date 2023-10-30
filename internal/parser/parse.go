@@ -1,4 +1,4 @@
-package parse
+package parser
 
 type Parser struct {
 	name string
