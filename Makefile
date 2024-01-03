@@ -4,6 +4,11 @@ build:
 run:
 	@go run cmd/pavosql/main.go
 
+# Docs
+
+docs:
+	@python -m http.server 3000 -d docs
+
 # Testing
 
 test:
