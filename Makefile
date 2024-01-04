@@ -6,7 +6,7 @@ run:
 
 # Docs
 
-docs:
+docsify:
 	@python -m http.server 3000 -d docs
 
 # Testing
@@ -41,6 +41,17 @@ test.parse.cover:
 
 test.parse.cover.show: test.parse.cover
 	@go tool cover -html parse_cover.out
+
+## Stack test
+
+test.stack:
+	@go test ./pkg/stack/...
+
+test.stack.cover:
+	@go test -coverprofile stack_cover.out ./pkg/stack/...
+
+test.stack.cover.show: test.stack.cover
+	@go tool cover -html stack_cover.out
 
 # Cleanup
 
