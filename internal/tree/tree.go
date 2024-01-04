@@ -153,8 +153,6 @@ func (t *Tree) recursiveInsert(ptr uint64, k, v []byte) ([]recurseResult, error)
 		return nil, errInvalNodeType
 	}
 
-	println(cur.Type())
-	println(cur.Size())
 	if cur.Size() > t.maxNodeSize {
 		l, r := cur.Split()
 

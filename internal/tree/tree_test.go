@@ -17,7 +17,7 @@ func mockTree() (Tree, map[uint64]Node) {
 		4:  &LeafNode{keys: [][]byte{{'a'}, {'b'}, {'c'}}, vals: [][]byte{{'a'}, {'b'}, {'c'}}},
 		5:  &LeafNode{keys: [][]byte{{'d'}, {'e'}, {'f'}}, vals: [][]byte{{'d'}, {'e'}, {'f'}}},
 		6:  &LeafNode{keys: [][]byte{{'g'}, {'h'}, {'i'}}, vals: [][]byte{{'g'}, {'h'}, {'i'}}},
-		7:  &LeafNode{keys: [][]byte{{'j'}, {'k'}, {'l'}}, vals: [][]byte{{'j'}, {'k'}, {'k'}}},
+		7:  &LeafNode{keys: [][]byte{{'j'}, {'k'}, {'l'}}, vals: [][]byte{{'j'}, {'k'}, {'l'}}},
 		8:  &LeafNode{keys: [][]byte{{'m'}, {'n'}, {'o'}}, vals: [][]byte{{'m'}, {'n'}, {'o'}}},
 		9:  &LeafNode{keys: [][]byte{{'p'}, {'q'}, {'r'}}, vals: [][]byte{{'p'}, {'q'}, {'r'}}},
 		10: &LeafNode{keys: [][]byte{{'s'}, {'t'}, {'u'}}, vals: [][]byte{{'s'}, {'t'}, {'u'}}},
