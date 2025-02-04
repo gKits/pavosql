@@ -21,9 +21,4 @@ bin
 # Go workspace file
 go.work
 
-# Hugo Docs
-docs/.hugo_build.lock
-public
-docs/public
-
 dist/
