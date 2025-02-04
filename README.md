@@ -1,8 +1,8 @@
 # PavoSQL
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Build](https://github.com/gKits/PavoSQL/actions/workflows/gobuild.yaml/badge.svg)](https://github.com/gKits/PavoSQL/actions/workflows/gobuild.yaml)
-[![Test](https://github.com/gKits/PavoSQL/actions/workflows/gotest.yaml/badge.svg)](https://github.com/gKits/PavoSQL/actions/workflows/gotest.yaml)
+[![Build](https://github.com/pavosql/pavosql/actions/workflows/build.yaml/badge.svg)](https://github.com/pavosql/pavosql/actions/workflows/build.yaml)
+[![Test](https://github.com/pavosql/pavosql/actions/workflows/test.yaml/badge.svg)](https://github.com/pavosql/pavosql/actions/workflows/test.yaml)
 
 PavoSQL is a SQL database written purely in Go.
 
