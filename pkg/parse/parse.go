@@ -1,84 +1,33 @@
 package parse
 
 import (
-	"fmt"
 	"io"
-	"text/scanner"
+	"sync"
+
+	"github.com/pavosql/pavosql/pkg/ast"
 )
 
-type parseState func(p *parser) (parseState, error)
+func Parse(r io.Reader) []ast.Stmnt {
+	var wg sync.WaitGroup
+	wg.Add(2)
 
-type parser struct {
-	q    Statement
-	scan *scanner.Scanner
-}
-
-func Parse(query io.Reader) ([]Statement, error) {
-	p := parser{
-		scan: new(scanner.Scanner).Init(query),
-	}
-
-	var (
-		state = parseOperator
-		err   error
-	)
-	for state != nil {
-		if state, err = state(&p); err != nil {
-			return nil, err
+	toks := make(chan Token)
+	go func() {
+		defer wg.Done()
+		for tok := range tokenize(r) {
+			toks <- tok
 		}
-	}
+	}()
 
-	return nil, nil
-}
-
-func parseOperator(p *parser) (parseState, error) {
-	tok := p.scan.Scan()
-	if tok == scanner.Ident {
-		if state, ok := operators[p.scan.TokenText()]; ok {
-			return state, nil
+	go func() {
+		defer wg.Done()
+		for tok := range toks {
+			_ = tok
+			// TODO: Implement parsing logic
 		}
-	}
-	return nil, fmt.Errorf("expected operator, got %s", p.scan.TokenText())
-}
+	}()
 
-func parseGet(p *parser) (parseState, error) {
-	tok := p.scan.Scan()
-	if tok != '(' {
-		return nil, fmt.Errorf("expected '(', got %s", p.scan.TokenText())
-	}
+	wg.Wait()
 
-	tok = p.scan.Scan()
-	if tok != scanner.Ident {
-		return nil, fmt.Errorf("expected table name identifier, got %s", p.scan.TokenText())
-	}
-
-	tok = p.scan.Scan()
-	if tok != ',' {
-		return nil, fmt.Errorf("expected ',', got %s", p.scan.TokenText())
-	}
-
-	return nil, nil
-}
-
-func parseInsert(p *parser) (parseState, error) {
-	return nil, nil
-}
-
-func parseUpdate(p *parser) (parseState, error) {
-	return nil, nil
-}
-
-func parseDelete(p *parser) (parseState, error) {
-	return nil, nil
-}
-
-func parseCreate(p *parser) (parseState, error) {
-	return nil, nil
-}
-
-func parseCondition(p *parser) (parseState, error) {
-	for tok := p.scan.Scan(); tok != scanner.EOF; tok = p.scan.Scan() {
-		break
-	}
-	return nil, nil
+	return nil
 }
