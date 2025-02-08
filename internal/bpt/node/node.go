@@ -58,6 +58,10 @@ func LenOf(node []byte) uint16 {
 	return binary.LittleEndian.Uint16(node[1:])
 }
 
+func SizeOf(node []byte) uint16 {
+	return offset(node, LenOf(node))
+}
+
 func Key(node []byte, i uint16) []byte {
 	if i >= LenOf(node) {
 		panic("index out of bounds")
@@ -166,10 +170,12 @@ func Merge(left, right []byte) []byte {
 
 	ln := LenOf(left)
 	rn := LenOf(right)
+	lsz := SizeOf(left)
+	rsz := SizeOf(right)
 
-	merged := slices.Insert(left, int(offset(left, 0)), right[3:3+2*rn]...)
-	merged = slices.Insert(merged, len(merged), right[offset(right, 0):]...)
-
+	merged := slices.Insert(left, int(lsz), right[offset(right, 0):rsz]...)
+	log.Println(merged)
+	merged = slices.Insert(merged, int(offset(left, 0)), right[3:3+2*rn]...)
 	binary.LittleEndian.PutUint16(merged[1:], ln+rn)
 
 	for i := range LenOf(merged) + 1 {
@@ -186,7 +192,7 @@ func Merge(left, right []byte) []byte {
 
 	_ = lastOff
 
-	return merged
+	return merged[:SizeOf(merged)]
 }
 
 func Split(node []byte) ([]byte, []byte) {

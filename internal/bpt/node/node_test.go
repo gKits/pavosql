@@ -7,43 +7,37 @@ import (
 )
 
 func TestTypeOf(t *testing.T) {
-	cases := []struct {
-		name        string
+	cases := map[string]struct {
 		node        []byte
 		want        Type
 		assertPanic assert.PanicAssertionFunc
 	}{
-		{
-			name:        "get leaf node type",
+		"get leaf node type": {
 			node:        []byte{byte(TypeLeaf)},
 			want:        TypeLeaf,
 			assertPanic: assert.NotPanics,
 		},
-		{
-			name:        "get pointer node type",
+		"get pointer node type": {
 			node:        []byte{byte(TypePointer)},
 			want:        TypePointer,
 			assertPanic: assert.NotPanics,
 		},
-		{
-			name:        "panic on invalid node type 0x00",
+		"panic on invalid node type 0x00": {
 			node:        []byte{0x00},
 			assertPanic: assert.Panics,
 		},
-		{
-			name:        "panic on invalid node type 0x11",
+		"panic on invalid node type 0x11": {
 			node:        []byte{0x11},
 			assertPanic: assert.Panics,
 		},
-		{
-			name:        "panic on invalid node type 0xff",
+		"panic on invalid node type 0xff": {
 			node:        []byte{0xff},
 			assertPanic: assert.Panics,
 		},
 	}
 
-	for _, c := range cases {
-		t.Run(c.name, func(t *testing.T) {
+	for name, c := range cases {
+		t.Run(name, func(t *testing.T) {
 			c.assertPanic(t, func() {
 				got := TypeOf(c.node)
 				assert.Equal(t, c.want, got)
@@ -53,44 +47,39 @@ func TestTypeOf(t *testing.T) {
 }
 
 func TestKey(t *testing.T) {
-	cases := []struct {
-		name        string
+	cases := map[string]struct {
 		node        []byte
 		input       uint16
 		want        []byte
 		assertPanic assert.PanicAssertionFunc
 	}{
-		{
-			name:        "0th key",
+		"0th key": {
 			node:        fixtureNodeEvenNumberOfKeys(),
 			input:       0,
 			want:        []byte("aaa"),
 			assertPanic: assert.NotPanics,
 		},
-		{
-			name:        "1st key",
+		"1st key": {
 			node:        fixtureNodeEvenNumberOfKeys(),
 			input:       1,
 			want:        []byte("bbb"),
 			assertPanic: assert.NotPanics,
 		},
-		{
-			name:        "9th key",
+		"9th key": {
 			node:        fixtureNodeEvenNumberOfKeys(),
 			input:       9,
 			want:        []byte("jjj"),
 			assertPanic: assert.NotPanics,
 		},
-		{
-			name:        "10th key",
+		"10th key": {
 			node:        fixtureNodeEvenNumberOfKeys(),
 			input:       10,
 			assertPanic: assert.Panics,
 		},
 	}
 
-	for _, c := range cases {
-		t.Run(c.name, func(t *testing.T) {
+	for name, c := range cases {
+		t.Run(name, func(t *testing.T) {
 			c.assertPanic(t, func() {
 				got := Key(c.node, c.input)
 				assert.Equal(t, c.want, got)
@@ -100,44 +89,39 @@ func TestKey(t *testing.T) {
 }
 
 func TestValue(t *testing.T) {
-	cases := []struct {
-		name        string
+	cases := map[string]struct {
 		node        []byte
 		input       uint16
 		want        []byte
 		assertPanic assert.PanicAssertionFunc
 	}{
-		{
-			name:        "0th value",
+		"0th value": {
 			node:        fixtureNodeEvenNumberOfKeys(),
 			input:       0,
 			want:        []byte("aaa"),
 			assertPanic: assert.NotPanics,
 		},
-		{
-			name:        "1st value",
+		"1st value": {
 			node:        fixtureNodeEvenNumberOfKeys(),
 			input:       1,
 			want:        []byte("bbb"),
 			assertPanic: assert.NotPanics,
 		},
-		{
-			name:        "9th value",
+		"9th value": {
 			node:        fixtureNodeEvenNumberOfKeys(),
 			input:       9,
 			want:        []byte("jjj"),
 			assertPanic: assert.NotPanics,
 		},
-		{
-			name:        "10th value",
+		"10th value": {
 			node:        fixtureNodeEvenNumberOfKeys(),
 			input:       10,
 			assertPanic: assert.Panics,
 		},
 	}
 
-	for _, c := range cases {
-		t.Run(c.name, func(t *testing.T) {
+	for name, c := range cases {
+		t.Run(name, func(t *testing.T) {
 			c.assertPanic(t, func() {
 				got := Value(c.node, c.input)
 				assert.Equal(t, c.want, got)
@@ -147,63 +131,54 @@ func TestValue(t *testing.T) {
 }
 
 func TestSearch(t *testing.T) {
-	cases := []struct {
-		name         string
+	cases := map[string]struct {
 		node, input  []byte
 		want         uint16
 		assertExists assert.BoolAssertionFunc
 	}{
-		{
-			name:         "search existing target in odd length node",
+		"search existing target in odd length node": {
 			node:         fixtureNodeOddNumberOfKeys(),
 			input:        []byte("ddd"),
 			want:         3,
 			assertExists: assert.True,
 		},
-		{
-			name:         "search non existing target in odd length node",
+		"search non existing target in odd length node": {
 			node:         fixtureNodeOddNumberOfKeys(),
 			input:        []byte("iij"),
 			want:         9,
 			assertExists: assert.False,
 		},
-		{
-			name:         "search existing target in even length node",
+		"search existing target in even length node": {
 			node:         fixtureNodeEvenNumberOfKeys(),
 			input:        []byte("hhh"),
 			want:         7,
 			assertExists: assert.True,
 		},
-		{
-			name:         "search non existing target in even length node",
+		"search non existing target in even length node": {
 			node:         fixtureNodeEvenNumberOfKeys(),
 			input:        []byte("bbc"),
 			want:         2,
 			assertExists: assert.False,
 		},
-		{
-			name:         "search before first key in odd length node",
+		"search before first key in odd length node": {
 			node:         fixtureNodeOddNumberOfKeys(),
 			input:        []byte("aa"),
 			want:         0,
 			assertExists: assert.False,
 		},
-		{
-			name:         "search after last key in odd length node",
+		"search after last key in odd length node": {
 			node:         fixtureNodeOddNumberOfKeys(),
 			input:        []byte("zzzzz"),
 			want:         11,
 			assertExists: assert.False,
 		},
-		{
-			name:         "search before first key in even length node",
+		"search before first key in even length node": {
 			node:         fixtureNodeEvenNumberOfKeys(),
 			input:        []byte("aa"),
 			want:         0,
 			assertExists: assert.False,
 		},
-		{
-			name:         "search after last key in even length node",
+		"search after last key in even length node": {
 			node:         fixtureNodeEvenNumberOfKeys(),
 			input:        []byte("zzzzz"),
 			want:         10,
@@ -211,8 +186,8 @@ func TestSearch(t *testing.T) {
 		},
 	}
 
-	for _, c := range cases {
-		t.Run(c.name, func(t *testing.T) {
+	for name, c := range cases {
+		t.Run(name, func(t *testing.T) {
 			got, exists := Search(c.node, c.input)
 			assert.Equal(t, c.want, got)
 			c.assertExists(t, exists)
@@ -221,8 +196,7 @@ func TestSearch(t *testing.T) {
 }
 
 func TestInsert(t *testing.T) {
-	cases := []struct {
-		name string
+	cases := map[string]struct {
 		node []byte
 		i    uint16
 		k, v []byte
@@ -231,9 +205,8 @@ func TestInsert(t *testing.T) {
 		wantLen    uint16
 		wantKAfter []byte
 	}{
-		{
-			name: "insert new cell",
-			i:    1, k: []byte("new"), v: []byte("new"),
+		"insert new cell": {
+			i: 1, k: []byte("new"), v: []byte("new"),
 			node: []byte{
 				1, 3, 0, 15, 0, 21, 0, 27, 0,
 				1, 0, 'a', 1, 0, 'a',
@@ -248,9 +221,8 @@ func TestInsert(t *testing.T) {
 				1, 0, 'c', 1, 0, 'c',
 			},
 		},
-		{
-			name: "insert new cell at the start",
-			i:    0, k: []byte("key"), v: []byte("value"),
+		"insert new cell at the start": {
+			i: 0, k: []byte("key"), v: []byte("value"),
 			node: []byte{
 				1, 3, 0, 15, 0, 21, 0, 27, 0,
 				1, 0, 'a', 1, 0, 'a',
@@ -265,9 +237,8 @@ func TestInsert(t *testing.T) {
 				1, 0, 'c', 1, 0, 'c',
 			},
 		},
-		{
-			name: "insert new cell at the end",
-			i:    2, k: []byte("at"), v: []byte("the end"),
+		"insert new cell at the end": {
+			i: 2, k: []byte("at"), v: []byte("the end"),
 			node: []byte{
 				1, 2, 0, 13, 0, 19, 0,
 				1, 0, 'a', 1, 0, 'a',
@@ -282,8 +253,8 @@ func TestInsert(t *testing.T) {
 		},
 	}
 
-	for _, c := range cases {
-		t.Run(c.name, func(t *testing.T) {
+	for name, c := range cases {
+		t.Run(name, func(t *testing.T) {
 			got := Insert(c.node, c.i, c.k, c.v)
 			assert.Equal(t, c.want, got)
 		})
@@ -291,16 +262,14 @@ func TestInsert(t *testing.T) {
 }
 
 func TestUpdate(t *testing.T) {
-	cases := []struct {
-		name string
+	cases := map[string]struct {
 		node []byte
 		i    uint16
 		k, v []byte
 		want []byte
 	}{
-		{
-			name: "update a single cell node",
-			i:    0, k: []byte("a"), v: []byte("this is a new value"),
+		"update a single cell node": {
+			i: 0, k: []byte("a"), v: []byte("this is a new value"),
 			node: []byte{
 				1, 1, 0, 11, 0,
 				1, 0, 'a', 1, 0, 'a',
@@ -310,9 +279,8 @@ func TestUpdate(t *testing.T) {
 				1, 0, 'a', 19, 0, 't', 'h', 'i', 's', ' ', 'i', 's', ' ', 'a', ' ', 'n', 'e', 'w', ' ', 'v', 'a', 'l', 'u', 'e',
 			},
 		},
-		{
-			name: "update first cell of a multi cell node",
-			i:    0, k: []byte("a"), v: []byte("new"),
+		"update first cell of a multi cell node": {
+			i: 0, k: []byte("a"), v: []byte("new"),
 			node: []byte{
 				1, 3, 0, 15, 0, 21, 0, 27, 0,
 				1, 0, 'a', 1, 0, 'a',
@@ -326,9 +294,8 @@ func TestUpdate(t *testing.T) {
 				1, 0, 'c', 1, 0, 'c',
 			},
 		},
-		{
-			name: "update last cell of a multi cell node",
-			i:    2, k: []byte("ccc"), v: []byte("new"),
+		"update last cell of a multi cell node": {
+			i: 2, k: []byte("ccc"), v: []byte("new"),
 			node: []byte{
 				1, 3, 0, 15, 0, 21, 0, 27, 0,
 				1, 0, 'a', 1, 0, 'a',
@@ -342,9 +309,8 @@ func TestUpdate(t *testing.T) {
 				3, 0, 'c', 'c', 'c', 3, 0, 'n', 'e', 'w',
 			},
 		},
-		{
-			name: "update cell with shorter cell",
-			i:    2, k: []byte("c"), v: []byte("c"),
+		"update cell with shorter cell": {
+			i: 2, k: []byte("c"), v: []byte("c"),
 			node: []byte{
 				1, 3, 0, 15, 0, 21, 0, 29, 0,
 				1, 0, 'a', 1, 0, 'a',
@@ -360,8 +326,8 @@ func TestUpdate(t *testing.T) {
 		},
 	}
 
-	for _, c := range cases {
-		t.Run(c.name, func(t *testing.T) {
+	for name, c := range cases {
+		t.Run(name, func(t *testing.T) {
 			got := Update(c.node, c.i, c.k, c.v)
 			assert.Equal(t, c.want, got)
 		})
@@ -369,15 +335,13 @@ func TestUpdate(t *testing.T) {
 }
 
 func TestDelete(t *testing.T) {
-	cases := []struct {
-		name string
+	cases := map[string]struct {
 		node []byte
 		i    uint16
 		want []byte
 	}{
-		{
-			name: "delete last cell of single cell node",
-			i:    0,
+		"delete last cell of single cell node": {
+			i: 0,
 			node: []byte{
 				1, 1, 0, 11, 0,
 				1, 0, 'a', 1, 0, 'a',
@@ -386,9 +350,8 @@ func TestDelete(t *testing.T) {
 				1, 0, 0,
 			},
 		},
-		{
-			name: "delete first cell of multi cell node",
-			i:    0,
+		"delete first cell of multi cell node": {
+			i: 0,
 			node: []byte{
 				1, 3, 0, 15, 0, 21, 0, 27, 0,
 				1, 0, 'a', 1, 0, 'a',
@@ -401,9 +364,8 @@ func TestDelete(t *testing.T) {
 				1, 0, 'c', 1, 0, 'c',
 			},
 		},
-		{
-			name: "delete last cell of multi cell node",
-			i:    2,
+		"delete last cell of multi cell node": {
+			i: 2,
 			node: []byte{
 				1, 3, 0, 15, 0, 21, 0, 27, 0,
 				1, 0, 'a', 1, 0, 'a',
@@ -416,9 +378,8 @@ func TestDelete(t *testing.T) {
 				1, 0, 'b', 1, 0, 'b',
 			},
 		},
-		{
-			name: "delete cell of multi cell node",
-			i:    1,
+		"delete cell of multi cell node": {
+			i: 1,
 			node: []byte{
 				1, 3, 0, 15, 0, 21, 0, 27, 0,
 				1, 0, 'a', 1, 0, 'a',
@@ -433,8 +394,8 @@ func TestDelete(t *testing.T) {
 		},
 	}
 
-	for _, c := range cases {
-		t.Run(c.name, func(t *testing.T) {
+	for name, c := range cases {
+		t.Run(name, func(t *testing.T) {
 			got := Delete(c.node, c.i)
 			assert.Equal(t, c.want, got)
 		})
@@ -442,13 +403,11 @@ func TestDelete(t *testing.T) {
 }
 
 func TestMerge(t *testing.T) {
-	cases := []struct {
-		name        string
+	cases := map[string]struct {
 		left, right []byte
 		want        []byte
 	}{
-		{
-			name: "merge two equally sized nodes",
+		"merge two equally sized nodes": {
 			left: []byte{
 				1, 3, 0, 15, 0, 21, 0, 27, 0,
 				1, 0, 'a', 1, 0, 'a', 1, 0, 'b', 1, 0, 'b', 1, 0, 'c', 1, 0, 'c',
@@ -464,8 +423,7 @@ func TestMerge(t *testing.T) {
 				1, 0, 'e', 1, 0, 'e', 1, 0, 'f', 1, 0, 'f',
 			},
 		},
-		{
-			name: "merge two differently sized nodes",
+		"merge two differently sized nodes": {
 			left: []byte{
 				1, 4, 0, 15, 0, 21, 0, 27, 0, 33, 0,
 				1, 0, 'a', 1, 0, 'a', 1, 0, 'b', 1, 0, 'b', 1, 0, 'c', 1, 0, 'c', 1, 0, 'd', 1, 0, 'd',
@@ -484,8 +442,8 @@ func TestMerge(t *testing.T) {
 		},
 	}
 
-	for _, c := range cases {
-		t.Run(c.name, func(t *testing.T) {
+	for name, c := range cases {
+		t.Run(name, func(t *testing.T) {
 			got := Merge(c.left, c.right)
 			assert.Equal(t, c.want, got)
 		})
@@ -493,13 +451,11 @@ func TestMerge(t *testing.T) {
 }
 
 func TestSplit(t *testing.T) {
-	cases := []struct {
-		name         string
+	cases := map[string]struct {
 		node         []byte
 		wantL, wantR []byte
 	}{
-		{
-			name: "split symmetrical node",
+		"split symmetrical node with even number of cells": {
 			node: []byte{
 				1, 6, 0, 21, 0, 27, 0, 33, 0, 39, 0, 45, 0, 51, 0,
 				1, 0, 'a', 1, 0, 'a', 1, 0, 'b', 1, 0, 'b',
@@ -515,15 +471,97 @@ func TestSplit(t *testing.T) {
 				1, 0, 'd', 1, 0, 'd', 1, 0, 'e', 1, 0, 'e', 1, 0, 'f', 1, 0, 'f',
 			},
 		},
+		"split symmetrical node with odd number of cells": {
+			node: []byte{
+				1, 7, 0, 23, 0, 29, 0, 35, 0, 41, 0, 47, 0, 53, 0, 59, 0,
+				1, 0, 'a', 1, 0, 'a', 1, 0, 'b', 1, 0, 'b',
+				1, 0, 'c', 1, 0, 'c', 1, 0, 'd', 1, 0, 'd',
+				1, 0, 'e', 1, 0, 'e', 1, 0, 'f', 1, 0, 'f',
+				1, 0, 'g', 1, 0, 'g',
+			},
+			wantL: []byte{
+				1, 4, 0, 17, 0, 23, 0, 29, 0, 35, 0,
+				1, 0, 'a', 1, 0, 'a', 1, 0, 'b', 1, 0, 'b', 1, 0, 'c', 1, 0, 'c', 1, 0, 'd', 1, 0, 'd',
+			},
+			wantR: []byte{
+				1, 3, 0, 15, 0, 21, 0, 27, 0,
+				1, 0, 'e', 1, 0, 'e', 1, 0, 'f', 1, 0, 'f', 1, 0, 'g', 1, 0, 'g',
+			},
+		},
+		"split asymmetrical node with even number of cells": {
+			node: []byte{
+				1, 6, 0, 22, 0, 28, 0, 36, 0, 42, 0, 48, 0, 54, 0,
+				2, 0, 'a', 'a', 1, 0, 'a', 1, 0, 'b', 1, 0, 'b',
+				2, 0, 'c', 'c', 2, 0, 'c', 'c', 1, 0, 'd', 1, 0, 'd',
+				1, 0, 'e', 1, 0, 'e', 1, 0, 'f', 1, 0, 'f',
+			},
+			wantL: []byte{
+				1, 3, 0, 16, 0, 22, 0, 30, 0,
+				2, 0, 'a', 'a', 1, 0, 'a', 1, 0, 'b', 1, 0, 'b', 2, 0, 'c', 'c', 2, 0, 'c', 'c',
+			},
+			wantR: []byte{
+				1, 3, 0, 15, 0, 21, 0, 27, 0,
+				1, 0, 'd', 1, 0, 'd', 1, 0, 'e', 1, 0, 'e', 1, 0, 'f', 1, 0, 'f',
+			},
+		},
+		"split asymmetrical node with odd number of cells": {
+			node: []byte{
+				1, 7, 0, 24, 0, 30, 0, 38, 0, 44, 0, 50, 0, 56, 0, 64, 0,
+				2, 0, 'a', 'a', 1, 0, 'a', 1, 0, 'b', 1, 0, 'b',
+				2, 0, 'c', 'c', 2, 0, 'c', 'c', 1, 0, 'd', 1, 0, 'd',
+				1, 0, 'e', 1, 0, 'e', 1, 0, 'f', 1, 0, 'f',
+				1, 0, 'g', 3, 0, 'g', 'g', 'g',
+			},
+			wantL: []byte{
+				1, 3, 0, 16, 0, 22, 0, 30, 0,
+				2, 0, 'a', 'a', 1, 0, 'a', 1, 0, 'b', 1, 0, 'b', 2, 0, 'c', 'c', 2, 0, 'c', 'c',
+			},
+			wantR: []byte{
+				1, 4, 0, 17, 0, 23, 0, 29, 0, 37, 0,
+				1, 0, 'd', 1, 0, 'd', 1, 0, 'e', 1, 0, 'e', 1, 0, 'f', 1, 0, 'f', 1, 0, 'g', 3, 0, 'g', 'g', 'g',
+			},
+		},
+		"split asymmetrical node with large last cell": {
+			node: []byte{
+				1, 5, 0, 19, 0, 25, 0, 31, 0, 37, 0, 61, 0,
+				1, 0, 'a', 1, 0, 'a', 1, 0, 'b', 1, 0, 'b',
+				1, 0, 'c', 1, 0, 'c', 1, 0, 'd', 1, 0, 'd',
+				10, 0, 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e',
+				10, 0, 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e',
+			},
+			wantL: []byte{
+				1, 4, 0, 17, 0, 23, 0, 29, 0, 35, 0,
+				1, 0, 'a', 1, 0, 'a', 1, 0, 'b', 1, 0, 'b', 1, 0, 'c', 1, 0, 'c', 1, 0, 'd', 1, 0, 'd',
+			},
+			wantR: []byte{
+				1, 1, 0, 29, 0,
+				10, 0, 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e',
+				10, 0, 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e',
+			},
+		},
+		"split asymmetrical node with large first cell": {
+			node: []byte{
+				1, 5, 0, 37, 0, 43, 0, 49, 0, 55, 0, 61, 0,
+				10, 0, 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a',
+				10, 0, 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a',
+				1, 0, 'b', 1, 0, 'b', 1, 0, 'c', 1, 0, 'c',
+				1, 0, 'd', 1, 0, 'd', 1, 0, 'e', 1, 0, 'e',
+			},
+			wantL: []byte{
+				1, 1, 0, 29, 0,
+				10, 0, 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a',
+				10, 0, 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a',
+			},
+			wantR: []byte{
+				1, 4, 0, 17, 0, 23, 0, 29, 0, 35, 0,
+				1, 0, 'b', 1, 0, 'b', 1, 0, 'c', 1, 0, 'c', 1, 0, 'd', 1, 0, 'd', 1, 0, 'e', 1, 0, 'e',
+			},
+		},
 	}
 
-	for _, c := range cases {
-		t.Run(c.name, func(t *testing.T) {
+	for name, c := range cases {
+		t.Run(name, func(t *testing.T) {
 			gotL, gotR := Split(c.node)
-			t.Log(gotL)
-			t.Log(c.wantL)
-			t.Log(gotR)
-			t.Log(c.wantR)
 			assert.Equal(t, c.wantL, gotL)
 			assert.Equal(t, c.wantR, gotR)
 		})
