@@ -73,11 +73,24 @@ func Key(node []byte, i uint16) []byte {
 func Value(node []byte, i uint16) []byte {
 	if i >= LenOf(node) {
 		panic("index out of bounds")
+	} else if TypeOf(node) != TypeLeaf {
+		panic("non leaf node does not have values")
 	}
 	off := offset(node, i)
 	kLen := binary.LittleEndian.Uint16(node[off:])
 	vLen := binary.LittleEndian.Uint16(node[off+2+kLen:])
 	return node[off+4+kLen : off+4+kLen+vLen]
+}
+
+func Pointer(node []byte, i uint16) uint64 {
+	if i >= LenOf(node) {
+		panic("index out of bounds")
+	} else if TypeOf(node) != TypePointer {
+		panic("non pointer node does not hold pointers")
+	}
+	off := offset(node, i)
+	kLen := binary.LittleEndian.Uint16(node[off:])
+	return binary.LittleEndian.Uint64(node[off+2+kLen:])
 }
 
 func Search(node []byte, target []byte) (uint16, bool) {
