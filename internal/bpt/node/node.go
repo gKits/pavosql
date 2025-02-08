@@ -35,7 +35,6 @@ package node
 import (
 	"bytes"
 	"encoding/binary"
-	"log"
 	"slices"
 )
 
@@ -86,7 +85,7 @@ func Search(node []byte, target []byte) (uint16, bool) {
 	left, right := uint16(0), n
 
 	for left < right {
-		cur := uint16(uint(left+right) >> 1)
+		cur := uint16(uint(left+right) >> 1) // #nosec G115 // right shift stops overflow
 		if cmp := bytes.Compare(Key(node, cur), target); cmp == -1 {
 			left = cur + 1
 		} else if cmp == 1 {
@@ -106,7 +105,6 @@ func Insert(node []byte, i uint16, k, v []byte) []byte {
 
 	binary.LittleEndian.PutUint16(node[1:], n+1)
 
-	log.Println(len(node), off)
 	node = slices.Insert(node, int(off), cell...)
 
 	node = slices.Insert(node, int(3+i*2), 0, 0)
@@ -114,11 +112,11 @@ func Insert(node []byte, i uint16, k, v []byte) []byte {
 
 	for a := uint16(1); a <= n+1; a++ {
 		currentOffset := offset(node, a)
-		shift := 2
+		var shift uint16 = 2
 		if a > i {
-			shift += len(cell)
+			shift += uint16(len(cell))
 		}
-		setOffset(node, a, uint16(int(currentOffset)+shift))
+		setOffset(node, a, uint16(currentOffset)+shift)
 	}
 	return node
 }
@@ -156,7 +154,6 @@ func Delete(node []byte, i uint16) []byte {
 		if a > i {
 			shift += nextOff - off
 		}
-		log.Println(a, currentOffset, shift)
 		setOffset(node, a, uint16(currentOffset-shift))
 	}
 
@@ -174,7 +171,6 @@ func Merge(left, right []byte) []byte {
 	rsz := SizeOf(right)
 
 	merged := slices.Insert(left, int(lsz), right[offset(right, 0):rsz]...)
-	log.Println(merged)
 	merged = slices.Insert(merged, int(offset(left, 0)), right[3:3+2*rn]...)
 	binary.LittleEndian.PutUint16(merged[1:], ln+rn)
 
@@ -184,7 +180,6 @@ func Merge(left, right []byte) []byte {
 		if i > ln {
 			shift = offset(left, ln) - 3
 		}
-		log.Println(curOff, shift)
 		setOffset(merged, i, curOff+shift)
 	}
 
@@ -197,22 +192,40 @@ func Merge(left, right []byte) []byte {
 
 func Split(node []byte) ([]byte, []byte) {
 	center := func(node []byte) uint16 {
-		target := ((uint16(len(node)) - offset(node, 0)) >> 1) + offset(node, 0)
 		n := LenOf(node)
-		left, right := uint16(0), n
+		target := ((uint16(SizeOf(node)) - offset(node, 0)) >> 1) + offset(node, 0)
 
-		for left < right {
-			cur := uint16(uint(left+right) >> 1)
-			off := offset(node, cur)
-			if off < target {
-				left = cur + 1
-			} else if off > target {
-				right = cur
-			} else {
+		cur := n / 2
+		for cur > 0 && cur < n {
+			curOff := offset(node, cur)
+			prevOff := offset(node, cur-1)
+			nextOff := offset(node, cur+1)
+
+			switch {
+			case curOff == target:
 				return cur
+			case nextOff == target:
+				return cur + 1
+			case prevOff == target:
+				return cur - 1
+			case curOff < target && nextOff < target:
+				cur = cur + 1
+				continue
+			case curOff > target && prevOff > target:
+				cur = cur - 1
+			case curOff < target && nextOff > target:
+				if target-curOff < nextOff-target {
+					return cur
+				}
+				return cur + 1
+			case curOff > target && prevOff < target:
+				if curOff-target < target-prevOff {
+					return cur
+				}
+				return cur - 1
 			}
 		}
-		return left
+		return cur
 	}(node)
 
 	n := LenOf(node)
