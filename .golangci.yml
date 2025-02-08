@@ -1,0 +1,19 @@
+linters:
+  disable-all: true
+
+  enable:
+    - errcheck
+    - lll
+    - gofmt
+    - gosec
+    - govet
+    - gosimple
+    - ineffassign
+    - staticcheck
+    - unused
+
+  fast: true
+
+linter-settings:
+
+issues:
