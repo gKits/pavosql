@@ -126,7 +126,8 @@ func (n *Node) Search(target []byte) (uint16, bool) {
 //
 // WARNING: No additional check is performed weither i is the correct position for k. Meaning it is
 // the callers responsibility to ensure that k belongs at position i to ensure the order of the keys
-// will not break. Always use Search before using Set to get the correct value for i.
+// will not break. Always use Search and CanSet before using Set to ensure that n has enough space
+// for the k-v pair and that the value of i is correct.
 func (n *Node) Set(i uint16, k, v []byte) Node {
 	l := n.N()
 	cell := makeCell(k, v)
@@ -140,11 +141,14 @@ func (n *Node) Set(i uint16, k, v []byte) Node {
 
 	res.setWCursor(off)
 
-	if ogK := n.Key(i); bytes.Equal(k, ogK) {
+	if bytes.Equal(k, n.Key(i)) {
 		res.setOffset(i, off)
 		return res
 	}
 
+	trailingOffs := n[offPos(i) : offPos(l)+2]
+	copy(res[offPos(i+1):], trailingOffs)
+	res.setOffset(i, off)
 	res.setN(l + 1)
 
 	return res
@@ -153,7 +157,7 @@ func (n *Node) Set(i uint16, k, v []byte) Node {
 // Returns true if n has enough space left in its void to add the given k-v pair. CanSet always
 // assumes that k does not exist.
 func (n *Node) CanSet(k, v []byte) bool {
-	return n.voidSize() >= uint16(6+len(k)+len(v))
+	return n.voidSize() >= 6+len(k)+len(v)
 }
 
 // Returns a copy of n with the given k-v pair set into it. If k already exists its value is
@@ -169,6 +173,8 @@ func (n *Node) Split() (left Node, right Node) {
 	var wc uint16 = common.PageSize
 
 	left, right = New(n.Type()), New(n.Type())
+
+	thresh := (common.PageSize - wc) / 2
 
 	addToNode := func(addTo *Node, i uint16, cell []byte, wCursor *uint16) {
 		*wCursor -= uint16(len(cell))
@@ -188,6 +194,10 @@ func (n *Node) Split() (left Node, right Node) {
 
 		addToNode(&left, i, cell, &wc)
 		i++
+
+		if wc < common.PageSize-thresh {
+			addToRight = true
+		}
 	}
 	return left, right
 }
@@ -238,14 +248,14 @@ func (n *Node) offset(i uint16) uint16 {
 	if n.indexInBounds(i) {
 		panic(ErrIndexOutOfBounds)
 	}
-	return binary.LittleEndian.Uint16(n[2*i+dataOff:])
+	return binary.LittleEndian.Uint16(n[offPos(i):])
 }
 
 func (n *Node) setOffset(i, off uint16) {
 	if n.indexInBounds(i) {
 		panic(ErrIndexOutOfBounds)
 	}
-	binary.LittleEndian.PutUint16(n[2*i+dataOff:], off)
+	binary.LittleEndian.PutUint16(n[offPos(i):], off)
 }
 
 func (n *Node) indexInBounds(i uint16) bool {
@@ -260,9 +270,13 @@ func (n *Node) setWCursor(wc uint16) {
 	binary.LittleEndian.PutUint16(n[wCurOff:], wc)
 }
 
-func (n *Node) voidSize() uint16 {
-	return n.wCursor() - (dataOff + n.N()*2)
+func (n *Node) voidSize() int {
+	return int(n.wCursor()) - int(offPos(n.N())+2)
 }
+
+// Returns the calculated position to the offset inside the offset list. This does NOT return the
+// offset itself only the reference to the offset.
+func offPos(i uint16) uint16 { return dataOff + 2*i }
 
 func makeCell(k, v []byte) []byte {
 	cell := make([]byte, 4+len(k)+len(v))
