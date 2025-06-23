@@ -3,6 +3,7 @@ package node
 import (
 	"bytes"
 	"encoding/binary"
+	"errors"
 	"iter"
 
 	"github.com/pavosql/pavosql/internal/common"
@@ -12,6 +13,10 @@ const (
 	nOff    = 1
 	wCurOff = nOff + 2
 	dataOff = wCurOff + 2
+)
+
+var (
+	ErrIndexOutOfBounds = errors.New("index is out of bounds")
 )
 
 /*
