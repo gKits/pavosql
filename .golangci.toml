@@ -1,0 +1,40 @@
+version = '2'
+
+[linters]
+default = 'none'
+enable = [
+  'errcheck',
+  'gosec',
+  'govet',
+  'ineffassign',
+  'lll',
+  'staticcheck',
+  'unused'
+]
+
+[linters.exclusions]
+generated = 'lax'
+presets = [
+  'comments',
+  'common-false-positives',
+  'legacy',
+  'std-error-handling'
+]
+paths = [
+  'third_party$',
+  'builtin$',
+  'examples$'
+]
+
+[formatters]
+enable = [
+  'gofmt'
+]
+
+[formatters.exclusions]
+generated = 'lax'
+paths = [
+  'third_party$',
+  'builtin$',
+  'examples$'
+]
