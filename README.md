@@ -1,4 +1,11 @@
-# PavoSQL
+<div align="center">
+  <a href="https://github.com/gkits/pavosql">
+    <img src="assets/pavosql-gopher.png" alt="pavosql gopher" width="240" height="240">
+  </a>
+  <h1 align="center">PavoSQL</h1>
+  <p align="center">
+  </p>
+</div>
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Build](https://github.com/pavosql/pavosql/actions/workflows/build.yaml/badge.svg)](https://github.com/pavosql/pavosql/actions/workflows/build.yaml)
