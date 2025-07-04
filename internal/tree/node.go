@@ -1,4 +1,4 @@
-package node
+package tree
 
 import (
 	"bytes"
@@ -20,7 +20,7 @@ var (
 )
 
 /*
-A Nodes is an array of bytes representing the data stored in a single node of a B+Tree.
+A node is an array of bytes representing the data stored in a single node of a B+Tree.
 Nodes are stored in a custom byte format that is structured as follows:
 
 	Description | Header | Data area
@@ -55,29 +55,29 @@ The data stored in the cells is formatted as follows:
 	------------+--------+--------+--------+-------
 	Size in B   | 2      | 2      | KeyLen | ValLen
 */
-type Node [common.PageSize]byte
+type node [common.PageSize]byte
 
-func New(typ byte) Node {
-	var n Node
+func newNode(typ byte) node {
+	var n node
 	n[0] = typ
 	n.setWCursor(common.PageSize)
 	return n
 }
 
 // Returns the type of n.
-func (n *Node) Type() byte {
+func (n *node) Type() byte {
 	return n[0]
 }
 
 // Returns the number of cells currently stored on n.
-func (n *Node) N() uint16 {
+func (n *node) N() uint16 {
 	return binary.LittleEndian.Uint16(n[nOff:])
 }
 
 // Returns the key of the i'th cell stored in n.
 //
 // Panics if i is greater or equal than the length of n.
-func (n *Node) Key(i uint16) []byte {
+func (n *node) Key(i uint16) []byte {
 	if !n.indexInBounds(i) {
 		panic(ErrIndexOutOfBounds)
 	}
@@ -89,7 +89,7 @@ func (n *Node) Key(i uint16) []byte {
 // Returns the value of the i'th cell stored in n.
 //
 // Panics if i is greater or equal than the length of n.
-func (n *Node) Val(i uint16) []byte {
+func (n *node) Val(i uint16) []byte {
 	if !n.indexInBounds(i) {
 		panic(ErrIndexOutOfBounds)
 	}
@@ -100,7 +100,7 @@ func (n *Node) Val(i uint16) []byte {
 }
 
 // Binary searches the target key inside n and returns its position and weither it exists.
-func (n *Node) Search(target []byte) (uint16, bool) {
+func (n *node) Search(target []byte) (uint16, bool) {
 	l := n.N()
 	left, right := uint16(0), l
 
@@ -128,14 +128,14 @@ func (n *Node) Search(target []byte) (uint16, bool) {
 // the callers responsibility to ensure that k belongs at position i to ensure the order of the keys
 // will not break. Always use Search and CanSet before using Set to ensure that n has enough space
 // for the k-v pair and that the value of i is correct.
-func (n *Node) Set(i uint16, k, v []byte) Node {
+func (n *node) Set(i uint16, k, v []byte) node {
 	l := n.N()
 	cell := makeCell(k, v)
 
 	wCur := n.wCursor()
 	off := wCur - uint16(len(cell))
 
-	var res Node
+	var res node
 	copy(res[:], n[:])
 	copy(res[off:wCur], cell)
 
@@ -156,27 +156,27 @@ func (n *Node) Set(i uint16, k, v []byte) Node {
 
 // Returns true if n has enough space left in its void to add the given k-v pair. CanSet always
 // assumes that k does not exist.
-func (n *Node) CanSet(k, v []byte) bool {
+func (n *node) CanSet(k, v []byte) bool {
 	return n.voidSize() >= 6+len(k)+len(v)
 }
 
 // Returns a copy of n with the given k-v pair set into it. If k already exists its value is
 // overwritten otherwise a new cell for k-v is inserted.
-func (n *Node) Delete(k []byte) Node {
-	return Node{}
+func (n *node) Delete(k []byte) node {
+	return node{}
 }
 
 // Splits n into two separate nodes.
-func (n *Node) Split() (left Node, right Node) {
+func (n *node) Split() (left node, right node) {
 	var addToRight bool
 	var i uint16
 	var wc uint16 = common.PageSize
 
-	left, right = New(n.Type()), New(n.Type())
+	left, right = newNode(n.Type()), newNode(n.Type())
 
 	thresh := (common.PageSize - wc) / 2
 
-	addToNode := func(addTo *Node, i uint16, cell []byte, wCursor *uint16) {
+	addToNode := func(addTo *node, i uint16, cell []byte, wCursor *uint16) {
 		*wCursor -= uint16(len(cell))
 		addTo.setOffset(i, *wCursor)
 		copy(addTo[*wCursor:], cell)
@@ -203,8 +203,8 @@ func (n *Node) Split() (left Node, right Node) {
 }
 
 // Returns a resorted and reduced copy of n by freeing up space used by unreferenced cells.
-func (n *Node) Vacuum() Node {
-	var vacuumed Node
+func (n *node) Vacuum() node {
+	var vacuumed node
 	vacuumed[0] = n.Type()
 	vacuumed.setN(n.N())
 
@@ -224,12 +224,12 @@ func (n *Node) Vacuum() Node {
 }
 
 // An iterator over all key-value pairs of n.
-func (n *Node) All() iter.Seq2[[]byte, []byte] {
+func (n *node) All() iter.Seq2[[]byte, []byte] {
 	return n.AllFrom(0)
 }
 
 // An iterator over all key-value pairs of n starting from position i.
-func (n *Node) AllFrom(i uint16) iter.Seq2[[]byte, []byte] {
+func (n *node) AllFrom(i uint16) iter.Seq2[[]byte, []byte] {
 	return func(yield func([]byte, []byte) bool) {
 		for ; i < n.N(); i++ {
 			k, v := n.Key(i), n.Val(i)
@@ -240,37 +240,37 @@ func (n *Node) AllFrom(i uint16) iter.Seq2[[]byte, []byte] {
 	}
 }
 
-func (n *Node) setN(nc uint16) {
+func (n *node) setN(nc uint16) {
 	binary.LittleEndian.PutUint16(n[nOff:], nc)
 }
 
-func (n *Node) offset(i uint16) uint16 {
+func (n *node) offset(i uint16) uint16 {
 	if n.indexInBounds(i) {
 		panic(ErrIndexOutOfBounds)
 	}
 	return binary.LittleEndian.Uint16(n[offPos(i):])
 }
 
-func (n *Node) setOffset(i, off uint16) {
+func (n *node) setOffset(i, off uint16) {
 	if n.indexInBounds(i) {
 		panic(ErrIndexOutOfBounds)
 	}
 	binary.LittleEndian.PutUint16(n[offPos(i):], off)
 }
 
-func (n *Node) indexInBounds(i uint16) bool {
+func (n *node) indexInBounds(i uint16) bool {
 	return i >= n.N()
 }
 
-func (n *Node) wCursor() uint16 {
+func (n *node) wCursor() uint16 {
 	return binary.LittleEndian.Uint16(n[wCurOff:])
 }
 
-func (n *Node) setWCursor(wc uint16) {
+func (n *node) setWCursor(wc uint16) {
 	binary.LittleEndian.PutUint16(n[wCurOff:], wc)
 }
 
-func (n *Node) voidSize() int {
+func (n *node) voidSize() int {
 	return int(n.wCursor()) - int(offPos(n.N())+2)
 }
 
