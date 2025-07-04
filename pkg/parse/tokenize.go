@@ -89,11 +89,12 @@ type Token struct {
 	Line, Column int
 }
 
-func tokenize(r io.Reader) iter.Seq[Token] {
+func tokenize(r io.Reader) iter.Seq2[int, Token] {
 	scan := new(scanner.Scanner)
 	scan.Init(r)
 
-	return func(yield func(Token) bool) {
+	return func(yield func(int, Token) bool) {
+		var i int
 		for r := scan.Scan(); r != scanner.EOF; r = scan.Scan() {
 			tok := Token{
 				Val:    scan.TokenText(),
@@ -124,9 +125,10 @@ func tokenize(r io.Reader) iter.Seq[Token] {
 				tok.Type = LexError
 			}
 
-			if !yield(tok) {
+			if !yield(i, tok) {
 				return
 			}
+			i++
 		}
 	}
 }
