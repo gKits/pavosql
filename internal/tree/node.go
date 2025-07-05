@@ -5,8 +5,6 @@ import (
 	"encoding/binary"
 	"errors"
 	"iter"
-
-	"github.com/pavosql/pavosql/internal/common"
 )
 
 const (
@@ -55,18 +53,18 @@ The data stored in the cells is formatted as follows:
 	------------+--------+--------+--------+-------
 	Size in B   | 2      | 2      | KeyLen | ValLen
 */
-type node [common.PageSize]byte
+type node [PageSize]byte
 
-func newNode(typ common.PageType) node {
+func newNode(typ PageType) node {
 	var n node
 	n[0] = byte(typ)
-	n.setWCursor(common.PageSize)
+	n.setWCursor(PageSize)
 	return n
 }
 
 // Returns the type of n.
-func (n *node) Type() common.PageType {
-	return common.PageType(n[0])
+func (n *node) Type() PageType {
+	return PageType(n[0])
 }
 
 // Returns the number of cells currently stored on n.
@@ -195,11 +193,11 @@ func (n *node) Delete(i uint16) node {
 func (n *node) Split() (left node, right node) {
 	var addToRight bool
 	var i uint16
-	var wc uint16 = common.PageSize
+	var wc uint16 = PageSize
 
 	left, right = newNode(n.Type()), newNode(n.Type())
 
-	thresh := (common.PageSize - wc) / 2
+	thresh := (PageSize - wc) / 2
 
 	addToNode := func(addTo *node, i uint16, cell []byte, wCursor *uint16) {
 		*wCursor -= uint16(len(cell))
@@ -220,7 +218,7 @@ func (n *node) Split() (left node, right node) {
 		addToNode(&left, i, cell, &wc)
 		i++
 
-		if wc < common.PageSize-thresh {
+		if wc < PageSize-thresh {
 			addToRight = true
 		}
 	}
@@ -233,7 +231,7 @@ func (n *node) Vacuum() node {
 	vacuumed[0] = byte(n.Type())
 	vacuumed.setN(n.N())
 
-	var wc uint16 = common.PageSize
+	var wc uint16 = PageSize
 	var i uint16
 	for k, v := range n.All() {
 		cell := makeCell(k, v)
