@@ -160,10 +160,26 @@ func (n *Node) CanSet(k, v []byte) bool {
 	return n.voidSize() >= 6+len(k)+len(v)
 }
 
-// Returns a copy of n with the given k-v pair set into it. If k already exists its value is
-// overwritten otherwise a new cell for k-v is inserted.
-func (n *Node) Delete(k []byte) Node {
-	return Node{}
+// Returns a copy of n with the k-v pair at index i deleted.
+//
+// Delete mereley deletes the reference to the cell and does not free up the cells space. To free up
+// the space taken up by unreferenced cells use Vacuum.
+func (n *Node) Delete(i uint16) Node {
+	if !n.indexInBounds(i) {
+		panic(ErrIndexOutOfBounds)
+	}
+
+	l := n.N()
+
+	var res Node
+	copy(res[:], n[:])
+
+	trailingOffs := n[offPos(i) : offPos(l)+2]
+	copy(res[offPos(i):], trailingOffs[2:])
+	res.setOffset(l, 0)
+	res.setN(l - 1)
+
+	return res
 }
 
 // Splits n into two separate nodes.
