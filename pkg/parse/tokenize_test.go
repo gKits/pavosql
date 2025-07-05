@@ -62,8 +62,7 @@ func Test_tokenize(t *testing.T) {
 
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			var i int
-			for got := range tokenize(strings.NewReader(c.in)) {
+			for i, got := range tokenize(strings.NewReader(c.in)) {
 				if i >= len(c.want) {
 					t.Fatalf("want %d tokens, got at least %d", len(c.want), i+1)
 				}

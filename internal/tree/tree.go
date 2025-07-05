@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/pavosql/pavosql/internal/common"
-	"github.com/pavosql/pavosql/internal/tree/node"
 )
 
 type pager interface {
@@ -28,7 +27,7 @@ func (t *Tree) Get(k []byte) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	cur := node.Node(page)
+	cur := node(page)
 
 	for {
 		i, exists := cur.Search(k)
@@ -40,7 +39,7 @@ func (t *Tree) Get(k []byte) ([]byte, error) {
 			if err != nil {
 				return nil, fmt.Errorf("tree: failed to read page: %w", err)
 			}
-			cur = node.Node(page)
+			cur = node(page)
 		case common.LeafPage:
 			if !exists {
 				return nil, errors.New("key does not exists on leaf node")
