@@ -57,16 +57,16 @@ The data stored in the cells is formatted as follows:
 */
 type Node [common.PageSize]byte
 
-func New(typ byte) Node {
+func New(typ common.PageType) Node {
 	var n Node
-	n[0] = typ
+	n[0] = byte(typ)
 	n.setWCursor(common.PageSize)
 	return n
 }
 
 // Returns the type of n.
-func (n *Node) Type() byte {
-	return n[0]
+func (n *Node) Type() common.PageType {
+	return common.PageType(n[0])
 }
 
 // Returns the number of cells currently stored on n.
