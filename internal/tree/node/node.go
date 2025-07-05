@@ -221,7 +221,7 @@ func (n *Node) Split() (left Node, right Node) {
 // Returns a resorted and reduced copy of n by freeing up space used by unreferenced cells.
 func (n *Node) Vacuum() Node {
 	var vacuumed Node
-	vacuumed[0] = n.Type()
+	vacuumed[0] = byte(n.Type())
 	vacuumed.setN(n.N())
 
 	var wc uint16 = common.PageSize
