@@ -3,8 +3,8 @@ package cmd
 import (
 	"os"
 
-	"github.com/pavosql/pavosql/cmd/pavosql/cmd/serve"
-	"github.com/pavosql/pavosql/cmd/pavosql/cmd/version"
+	"github.com/gkits/pavosql/cmd/pavosql/cmd/serve"
+	"github.com/gkits/pavosql/cmd/pavosql/cmd/version"
 	"github.com/spf13/cobra"
 )
 

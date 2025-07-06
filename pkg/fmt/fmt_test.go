@@ -4,7 +4,7 @@ import (
 	"io"
 	"testing"
 
-	"github.com/pavosql/pavosql/pkg/fmt"
+	"github.com/gkits/pavosql/pkg/fmt"
 )
 
 func TestFormat(t *testing.T) {

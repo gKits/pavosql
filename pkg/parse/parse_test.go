@@ -4,8 +4,8 @@ import (
 	"io"
 	"testing"
 
-	"github.com/pavosql/pavosql/pkg/ast"
-	"github.com/pavosql/pavosql/pkg/parse"
+	"github.com/gkits/pavosql/pkg/ast"
+	"github.com/gkits/pavosql/pkg/parse"
 )
 
 func TestParse(t *testing.T) {

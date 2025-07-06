@@ -1,4 +1,4 @@
-module github.com/pavosql/pavosql
+module github.com/gkits/pavosql
 
 go 1.24
 

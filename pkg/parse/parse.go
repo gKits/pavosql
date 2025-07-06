@@ -3,7 +3,7 @@ package parse
 import (
 	"io"
 
-	"github.com/pavosql/pavosql/pkg/ast"
+	"github.com/gkits/pavosql/pkg/ast"
 )
 
 func Parse(r io.Reader) ([]ast.Stmnt, error) {

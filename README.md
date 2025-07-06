@@ -8,10 +8,10 @@
 </div>
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Build](https://github.com/pavosql/pavosql/actions/workflows/build.yaml/badge.svg)](https://github.com/pavosql/pavosql/actions/workflows/build.yaml)
-[![Test](https://github.com/pavosql/pavosql/actions/workflows/test.yaml/badge.svg)](https://github.com/pavosql/pavosql/actions/workflows/test.yaml)
+[![Build](https://github.com/gkits/pavosql/actions/workflows/build.yaml/badge.svg)](https://github.com/gkits/pavosql/actions/workflows/build.yaml)
+[![Test](https://github.com/gkits/pavosql/actions/workflows/test.yaml/badge.svg)](https://github.com/gkits/pavosql/actions/workflows/test.yaml)
 
-PavoSQL is a SQL database written purely in Go.
+**This is project is still work in progress and not supposed to be used in any productive setting.**
 
 ## Roadmap
 
