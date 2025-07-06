@@ -97,13 +97,13 @@ func (n *node) Val(i uint16) []byte {
 	return n[off+4+kLen : off+4+kLen+vLen]
 }
 
-func (n *node) Pointer(i uint16) uint64 {
+func (n *node) Pointer(i uint16) int64 {
 	if !n.indexInBounds(i) {
 		panic(ErrIndexOutOfBounds)
 	}
 	off := n.offset(i)
 	kLen := binary.LittleEndian.Uint16(n[off:])
-	return binary.LittleEndian.Uint64(n[off+2+kLen : off+2+kLen+8])
+	return int64(binary.LittleEndian.Uint64(n[off+2+kLen : off+2+kLen+8]))
 }
 
 // Binary searches the target key inside n and returns its position and weither it exists.
