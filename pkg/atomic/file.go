@@ -49,6 +49,10 @@ func OpenFile(name string) (*File, error) {
 	}, nil
 }
 
+func (f *File) ReadAt(b []byte, off int64) (n int, err error) {
+	return f.tmp.ReadAt(b, off)
+}
+
 func (f *File) WriteAt(b []byte, off int64) (n int, err error) {
 	return f.tmp.WriteAt(b, off)
 }
