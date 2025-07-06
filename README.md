@@ -19,7 +19,7 @@
   - [ ] Single file backend
     - [ ] B+tree structure
     - [ ] Concurrent r/w
-    - [ ] Atomic i/o
+    - [x] Atomic i/o
   - [ ] SQL
     - [ ] Relational model
       - [ ] Tables
