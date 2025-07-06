@@ -5,7 +5,8 @@ import (
 )
 
 var (
-	port uint16
+	port     uint16
+	filePath string
 )
 
 func Command() *cobra.Command {
@@ -18,6 +19,7 @@ func Command() *cobra.Command {
 		},
 	}
 
+	serveCmd.Flags().StringVarP(&filePath, "file", "f", "/var/lib/pavosql/pavosql.db", "")
 	serveCmd.Flags().Uint16VarP(&port, "port", "p", 6677, "")
 
 	return serveCmd
