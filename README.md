@@ -1,37 +1,38 @@
-# PavoSQL
+<div align="center">
+  <a href="https://github.com/gkits/pavosql">
+    <img src="assets/pavosql-gopher.png" alt="pavosql gopher" width="240" height="240">
+  </a>
+  <h1 align="center">PavoSQL</h1>
+  <p align="center">
+  </p>
+</div>
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Build](https://github.com/gKits/PavoSQL/actions/workflows/gobuild.yaml/badge.svg)](https://github.com/gKits/PavoSQL/actions/workflows/gobuild.yaml)
-[![Test](https://github.com/gKits/PavoSQL/actions/workflows/gotest.yaml/badge.svg)](https://github.com/gKits/PavoSQL/actions/workflows/gotest.yaml)
-[![Build Hugo docs and deploy to pages](https://github.com/gKits/PavoSQL/actions/workflows/hugo.yaml/badge.svg)](https://gkits.github.io/PavoSQL)
+[![Build](https://github.com/gkits/pavosql/actions/workflows/build.yaml/badge.svg)](https://github.com/gkits/pavosql/actions/workflows/build.yaml)
+[![Test](https://github.com/gkits/pavosql/actions/workflows/test.yaml/badge.svg)](https://github.com/gkits/pavosql/actions/workflows/test.yaml)
 
-**This is a learning project and is not meant to be run in production environments.**
-
-**This project is stil w.i.p.**
-
-PavoSQL is a SQL relational Database written in pure Go, meaning only using Go's standard library.
+**This is project is still work in progress and not supposed to be used in any productive setting.**
 
 ## Roadmap
 
-- [x] Atomic backend store on single file
-- [ ] Relational model build on KV Store
-    - [ ] Point queries
-    - [ ] Range queries
-    - [ ] Insert
-    - [ ] Delete
-    - [ ] Sorting
-    - [ ] Group By
-    - [ ] Joins
-- [ ] Lexer and Parser for SQL queries
-- [ ] Database server and client to use PavoSQL over the network
-- [ ] User and privilege system
+- [ ] Database engine
+  - [ ] Single file backend
+    - [ ] B+tree structure
+    - [ ] Concurrent r/w
+    - [ ] Atomic i/o
+  - [ ] SQL
+    - [ ] Relational model
+      - [ ] Tables
+      - [ ] Indexes
+      - [ ] Metadata
+    - [ ] Lexer, parser and AST
+    - [ ] Query functionality
+- [ ] Network
+  - [ ] Server + client
+  - [ ] Authentication + Authorization
 - [ ] Implement [database/sql](https://pkg.go.dev/database/sql) driver interface
-- [ ] Database Management System in single directory
-- [ ] Windows compatibilty of backend store (remain atomic)
 - [ ] Documentation
-- [ ] Installable as service/daemon (e.g. systemd)
-- [ ] Create and release Docker image
-- [ ] 80% Test coverage (not needed but nice to have)
+- [ ] Docker image
 
 ## Reference material
 
